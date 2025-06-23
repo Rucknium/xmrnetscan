@@ -2,6 +2,7 @@
 *.tws
 .DS_Store
 .quarto
+inst/bin/*
 
 # R gitignore template from https://github.com/github/gitignore/blob/master/R.gitignore
 # And added *.Rproj
@@ -58,3 +59,6 @@ po/*~
 rsconnect/
 
 docs
+src/rust/vendor
+src/Makevars
+src/Makevars.win
