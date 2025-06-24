@@ -1,0 +1,13 @@
+[package]
+name = 'r_monero_network_crawler'
+publish = false
+version = '0.1.0'
+edition = '2021'
+rust-version = '1.65'
+
+[lib]
+crate-type = [ 'staticlib' ]
+name = 'r_monero_network_crawler'
+
+[dependencies]
+extendr-api = '*'
