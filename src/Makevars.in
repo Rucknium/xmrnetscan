@@ -30,7 +30,10 @@ $(STATLIB):
 
 	export CARGO_HOME=$(CARGOTMP) && \
 	export PATH="$(PATH):$(HOME)/.cargo/bin" && \
-	RUSTFLAGS="$(RUSTFLAGS) --print=native-static-libs" cargo build @CRAN_FLAGS@ --lib @PROFILE@ --manifest-path=./rust/Cargo.toml --target-dir $(TARGET_DIR) @TARGET@
+	RUSTFLAGS="$(RUSTFLAGS) --print=native-static-libs" cargo build @CRAN_FLAGS@ @PROFILE@ --manifest-path=./rust/Cargo.toml --target-dir $(TARGET_DIR) @TARGET@
+
+	mkdir -p ../inst/bin;
+	cp $(LIBDIR)/monero-network-crawler ../inst/bin/monero-network-crawler;
 
 	# Always clean up CARGOTMP
 	rm -Rf $(CARGOTMP);

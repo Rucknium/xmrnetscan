@@ -9,5 +9,9 @@ rust-version = '1.65'
 crate-type = [ 'staticlib' ]
 name = 'r_monero_network_crawler'
 
+[[bin]]
+name="monero-network-crawler"
+path="src/main.rs"
+
 [dependencies]
 extendr-api = '*'
