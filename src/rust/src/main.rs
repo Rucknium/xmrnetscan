@@ -62,8 +62,22 @@ use cuprate_wire::{
     common::PeerSupportFlags, AdminRequestMessage, AdminResponseMessage, BasicNodeData,
 };
 
+use clap::Parser;
+
+/// A simple tool to find all the reachable nodes on the Monero P2P network. It works by recursively connecting to
+/// every peer we are told about in a peer list message, starting by connecting to the seed nodes.
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Cli {
+   /// Collect peer lists provided by other nodes and write to peer_list.txt
+   #[arg(short, long)] // Defines -c/--collect-peer-lists flag
+   collect_peer_lists: bool,
+}
+
+/// A set of all node's [`SocketAddr`] that we have successfully connected to.
 static SCANNED_NODES: LazyLock<DashSet<SocketAddr>> = LazyLock::new(|| DashSet::new());
 
+/// The [`Connector`] service to make outbound connections to nodes.
 static CONNECTOR: OnceLock<
     Connector<
         ClearNet,
@@ -74,12 +88,23 @@ static CONNECTOR: OnceLock<
     >,
 > = OnceLock::new();
 
+/// The channel that is used to communicate a successful connection.
 static BAD_PEERS_CHANNEL: OnceLock<mpsc::Sender<(SocketAddr, Vec<u64>, bool)>> = OnceLock::new();
 
-static CONNECTION_SEMAPHORE: Semaphore = Semaphore::const_new(100);
+/// A [`Semaphore`] to limit the amount of concurrent connection attempts so we don't overrun ourself.
+static CONNECTION_SEMAPHORE: OnceLock<Semaphore> = OnceLock::new();
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
+    // If collecting peer lists, only use one thread so that data is written to
+    // peer_lists.txt seqentially.
+    let n_semaphore_permits: usize = match Cli::parse().collect_peer_lists {
+        true => 1,
+        false => 100
+    };
+    let _ = CONNECTION_SEMAPHORE.set(Semaphore::new(n_semaphore_permits));
+    // Linter says that the result should be captured, but ignored by "_"
+    
     FmtSubscriber::builder()
         .with_max_level(LevelFilter::DEBUG)
         .init();
@@ -95,10 +120,12 @@ async fn main() {
     .with_address_book(AddressBookService)
     .build();
 
+    // Create and set the CONNECTOR global.
     let connector = Connector::new(handshaker);
 
     let _ = CONNECTOR.get_or_init(|| connector.clone());
 
+    // Create and set the BAD_PEERS_CHANNEL global.
     let (bad_peers_tx, mut bad_peers_rx) = mpsc::channel(508);
 
     BAD_PEERS_CHANNEL.set(bad_peers_tx).unwrap();
@@ -151,9 +178,24 @@ async fn main() {
     }
 }
 
+/// Check a node is reachable, sending the address down the [`BAD_PEERS_CHANNEL`] if it is.
 async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
-    let _guard = CONNECTION_SEMAPHORE.acquire().await.unwrap();
+    // Acquire a semaphore permit.
+    let _guard = CONNECTION_SEMAPHORE.get().unwrap().acquire().await.unwrap();
+    
+    if Cli::parse().collect_peer_lists {
+        let mut peer_list_file = OpenOptions::new()
+        .create(true)
+            .append(true)
+            .open("peer_list.txt")
+            .unwrap();
+    
+        peer_list_file
+            .write_fmt(format_args!("connected_node: {addr:?}, \n"))
+            .unwrap();
+    }
 
+    // Grab the connector from the `CONNECTOR` global
     let mut connector = CONNECTOR.get().unwrap().clone();
 
     let mut client = timeout(
@@ -211,6 +253,8 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
     Ok(())
 }
 
+/// An address book service used in the [`CONNECTOR`] that just calls [`check_node`] on each peer in an
+/// incoming peer list and does not actually track peer addresses.
 #[derive(Clone)]
 pub struct AddressBookService;
 
@@ -227,15 +271,41 @@ impl Service<AddressBookRequest<ClearNet>> for AddressBookService {
         async {
             match req {
                 AddressBookRequest::IncomingPeerList(peers) => {
-                    for mut peer in peers {
-                        peer.adr.make_canonical();
-                        if SCANNED_NODES.insert(peer.adr) {
-                            tokio::spawn(async move {
-                                if check_node(peer.adr).await.is_err() {
-                                    SCANNED_NODES.remove(&peer.adr);
-                                }
-                            });
+
+                    if Cli::parse().collect_peer_lists {
+                        
+                        let mut peer_list_file = OpenOptions::new()
+                          .create(true)
+                          .append(true)
+                          .open("peer_list.txt")
+                          .unwrap();
+                        for mut peer in peers {
+                            peer.adr.make_canonical();
+                            let mut peer_adr = peer.adr;
+                            peer_list_file
+                              .write_fmt(format_args!("peer: {peer_adr:?}, \n"))
+                              .unwrap();
+
+                            if SCANNED_NODES.insert(peer.adr) {
+                                tokio::spawn(async move {
+                                    if check_node(peer.adr).await.is_err() {
+                                        SCANNED_NODES.remove(&peer.adr);
+                                    }
+                                });
+                            }
                         }
+                    } else {
+                    
+                      for mut peer in peers {
+                          peer.adr.make_canonical();
+                          if SCANNED_NODES.insert(peer.adr) {
+                              tokio::spawn(async move {
+                                  if check_node(peer.adr).await.is_err() {
+                                      SCANNED_NODES.remove(&peer.adr);
+                                  }
+                              });
+                          }
+                       }
                     }
 
                     Ok(AddressBookResponse::Ok)
