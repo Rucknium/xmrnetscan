@@ -69,7 +69,7 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
-   /// Collect peer lists provided by other nodes and write to peer_list.txt
+   /// Collect peer lists provided by other nodes and write to handshake_data.txt
    #[arg(short, long)] // Defines -c/--collect-peer-lists flag
    collect_peer_lists: bool,
 }
@@ -187,11 +187,11 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
         let mut peer_list_file = OpenOptions::new()
         .create(true)
             .append(true)
-            .open("peer_list.txt")
+            .open("handshake_data.txt")
             .unwrap();
     
         peer_list_file
-            .write_fmt(format_args!("connected_node: {addr:?}, \n"))
+            .write_fmt(format_args!("BEGINPEER\nconnected_node@{addr:?}\n"))
             .unwrap();
     }
 
@@ -206,6 +206,28 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
             .call(ConnectRequest { addr, permit: None }),
     )
     .await??;
+
+
+    if Cli::parse().collect_peer_lists {
+
+        let mut peer_list_file = OpenOptions::new()
+        .create(true)
+            .append(true)
+            .open("handshake_data.txt")
+            .unwrap();
+
+        let rpc_port = client.info.basic_node_data.rpc_port;
+        let pruning_seed = client.info.pruning_seed;
+        let peer_id = client.info.basic_node_data.peer_id;
+        let support_flags = client.info.basic_node_data.support_flags;
+        let core_sync_data = client.info.core_sync_data;
+        let my_port = client.info.basic_node_data.my_port;
+
+        peer_list_file
+            .write_fmt(format_args!("rpc_port@{rpc_port:?}\npruning_seed@{pruning_seed:?}@\npeer_id@{peer_id:?}\nsupport_flags@{support_flags:?}\ncore_sync_data@{core_sync_data:?}\nhandle@{handle:?}@\nmy_port@{my_port:?}\n" ))
+            .unwrap();
+    }
+
 
     let PeerResponse::Admin(AdminResponseMessage::Ping(ping)) = client
         .ready()
@@ -277,13 +299,13 @@ impl Service<AddressBookRequest<ClearNet>> for AddressBookService {
                         let mut peer_list_file = OpenOptions::new()
                           .create(true)
                           .append(true)
-                          .open("peer_list.txt")
+                          .open("handshake_data.txt")
                           .unwrap();
                         for mut peer in peers {
                             peer.adr.make_canonical();
                             let mut peer_adr = peer.adr;
                             peer_list_file
-                              .write_fmt(format_args!("peer: {peer_adr:?}, \n"))
+                              .write_fmt(format_args!("peerlist_peer@{peer_adr:?}\n"))
                               .unwrap();
 
                             if SCANNED_NODES.insert(peer.adr) {
