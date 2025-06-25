@@ -37,14 +37,14 @@ use std::{
     convert::Infallible,
     fs::OpenOptions,
     io::Write,
-    net::{IpAddr, SocketAddr},
+    net::SocketAddr, // IpAddr,
     sync::{LazyLock, OnceLock},
     task::Poll,
     time::Duration,
 };
 use tokio::{
     sync::{mpsc, Semaphore},
-    time::{timeout}, // sleep,
+    time::timeout, // sleep,
 };
 use tower::{make::Shared, util::MapErr, Service, ServiceExt};
 use tracing::error;
@@ -220,7 +220,7 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
         let pruning_seed = client.info.pruning_seed;
         let peer_id = client.info.basic_node_data.peer_id;
         let support_flags = client.info.basic_node_data.support_flags;
-        let core_sync_data = client.info.core_sync_data;
+        let core_sync_data = client.info.core_sync_data.clone();
         let my_port = client.info.basic_node_data.my_port;
 
         peer_list_file
