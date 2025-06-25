@@ -31,7 +31,7 @@
 
 use dashmap::DashSet;
 use futures::{future::BoxFuture, stream, FutureExt};
-use std::net::{Ipv4Addr, SocketAddrV4};
+// use std::net::{Ipv4Addr, SocketAddrV4};
 use std::{
     collections::HashSet,
     convert::Infallible,
@@ -44,7 +44,7 @@ use std::{
 };
 use tokio::{
     sync::{mpsc, Semaphore},
-    time::{sleep, timeout},
+    time::{timeout}, // sleep,
 };
 use tower::{make::Shared, util::MapErr, Service, ServiceExt};
 use tracing::error;
@@ -224,7 +224,7 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
         let my_port = client.info.basic_node_data.my_port;
 
         peer_list_file
-            .write_fmt(format_args!("rpc_port@{rpc_port:?}\npruning_seed@{pruning_seed:?}@\npeer_id@{peer_id:?}\nsupport_flags@{support_flags:?}\ncore_sync_data@{core_sync_data:?}\nhandle@{handle:?}@\nmy_port@{my_port:?}\n" ))
+            .write_fmt(format_args!("rpc_port@{rpc_port:?}\npruning_seed@{pruning_seed:?}@\npeer_id@{peer_id:?}\nsupport_flags@{support_flags:?}\ncore_sync_data@{core_sync_data:?}\nmy_port@{my_port:?}\n" ))
             .unwrap();
     }
 
@@ -303,7 +303,7 @@ impl Service<AddressBookRequest<ClearNet>> for AddressBookService {
                           .unwrap();
                         for mut peer in peers {
                             peer.adr.make_canonical();
-                            let mut peer_adr = peer.adr;
+                            let peer_adr = peer.adr;
                             peer_list_file
                               .write_fmt(format_args!("peerlist_peer@{peer_adr:?}\n"))
                               .unwrap();
