@@ -12,3 +12,6 @@ $run_dev.*
 ^src/rust/target$
 ^src/Makevars$
 ^src/Makevars\.win$
+^app\.R$
+^rsconnect$
+^\.rscignore$

@@ -5,23 +5,35 @@ Authors@R:
     c(person(family = "Rucknium",
              role = c("cre", "aut", "cph"),
              email = "Rucknium@protonmail.com",
-             comment = c(ORCID = "0000-0001-5999-8950"))
+             comment = c(ORCID = "0000-0001-5999-8950")),
+      person(family = "Boog900",
+             role = c("aut", "cph"),
+             comment = c("Author of Rust network crawler"))
       )
-Description: Shiny App with with Monero Node Data Collected from Network Scans.
+Description: Shiny App with Monero Node Data Collected from Network
+    Scans.
 License: AGPL (>= 3)
+URL: https://github.com/Rucknium/xmrnetscan
+BugReports: https://github.com/Rucknium/xmrnetscan/issues
+Depends: 
+    R (>= 4.2)
 Imports: 
     config,
+    data.table,
+    DBI,
     golem,
-    shiny
+    plotly,
+    RSQLite,
+    shiny,
+    shinycssloaders,
+    shinyhelper
+Suggests: 
+    testthat (>= 3.0.0)
+Remotes: 
+    github::Rucknium/xmrpeers
+Config/rextendr/version: 0.4.1
+Config/testthat/edition: 3
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
-URL: https://github.com/Rucknium/xmrnetscan
-BugReports: https://github.com/Rucknium/xmrnetscan/issues
-Suggests: 
-    testthat (>= 3.0.0)
-Config/testthat/edition: 3
-Config/rextendr/version: 0.4.1
 SystemRequirements: Cargo (Rust's package manager), rustc
-Depends: 
-    R (>= 4.2)

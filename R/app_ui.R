@@ -10,7 +10,27 @@ app_ui <- function(request) {
     golem_add_external_resources(),
     # Your application UI logic
     fluidPage(
-      golem::golem_welcome_page() # Remove this line to start building your UI
+      # golem::golem_welcome_page() # Remove this line to start building your UI
+      titlePanel("Monero Network Scan"),
+      shiny::h4(shiny::HTML('Looking for remote nodes to sync your wallet and send transactions? Check out <a href="https://github.com/feather-wallet/feather-nodes/blob/master/nodes.yaml">Feather Wallet\'s list of remote nodes</a>,  <a href="https://xmr.ditatompel.com">ditatompel\'s list</a>, or <a href="https://monero.fail/">monero.fail</a>.')),
+      shiny::h4(shiny::HTML('The open source code for this web app is available <a href="https://github.com/Rucknium/xmrnetscan">here</a>.')),
+      shiny::br(),
+      plotly::plotlyOutput("line_chart1", height = "500px") |>
+        shinyhelper::helper(colour = "red", type = "inline",
+          content = 'Reachable nodes are classified as suspected spy nodes if they are marked as spies by the <a href="https://github.com/Boog900/p2p-proxy-checker">p2p-proxy-checker</a>. All other reachable nodes (i.e. nodes that accept inbound connections) are classified as honest reachable nodes. The number of unreachable nodes is estimated by counting the unique IP addresses in all of the peerlists shared by reachable nodes during the p2p handshake.'),
+      shiny::br(),
+      plotly::plotlyOutput("line_chart2", height = "500px") |>
+        shinyhelper::helper(colour = "red", type = "inline",
+          content = 'A node is assumed to be using an IP ban list if none of its 250 peer IP addresses shared during a p2p handshake are on the ban list. Some false positives are possible. The DNS ban list is enabled by using the "--enable-dns-blocklist" node startup flag. The Monero Research Lab ban list is <a href="https://github.com/Boog900/monero-ban-list">here</a>.'), 
+      shiny::br(),
+      shiny::fluidRow(
+        shiny::column(6, plotly::plotlyOutput("line_chart3", height = "500px")),
+        shiny::column(6, plotly::plotlyOutput("line_chart4", height = "500px"))
+      ),
+      shiny::br(),
+      shiny::h4("Node IP address interactive treemap, grouped by /16 subnet"),
+      shinycssloaders::withSpinner(
+        plotly::plotlyOutput("subnet_treemap", height = "800px"), size = 3, caption = "Subnet treemap")
     )
   )
 }
