@@ -30,6 +30,7 @@ app_ui <- function(request) {
       ),
       shiny::br(),
       shiny::h4("Node IP address interactive treemap, grouped by /16 subnet"),
+      shiny::h5("Click on the boxes to get more information about each node"),
       shinycssloaders::withSpinner(
         plotly::plotlyOutput("subnet_treemap", height = "800px"), size = 3, caption = "Subnet treemap"),
       shiny::hr(),
