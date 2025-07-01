@@ -12,6 +12,8 @@
 app_server <- function(input, output, session) {
   # Your application server logic
   
+  shinyOptions(cache = cachem::cache_disk("./cache_dir"))
+  
   shinyhelper::observe_helpers()
   
   db.file <- "data-raw/net-scans/netscan-test.db"
@@ -77,7 +79,8 @@ app_server <- function(input, output, session) {
         plotly::config(displayModeBar = FALSE) 
       fig
       
-    })
+    }) |>
+      shiny::bindCache(most.recent.date)
   # }, domain = NULL)
   
   # shiny::observe({
@@ -116,7 +119,8 @@ app_server <- function(input, output, session) {
         plotly::config(displayModeBar = FALSE) 
       fig
       
-    })
+    }) |>
+      shiny::bindCache(most.recent.date)
   # }, domain = NULL)
     
     
@@ -153,7 +157,8 @@ app_server <- function(input, output, session) {
         plotly::config(displayModeBar = FALSE) 
       fig
       
-    })
+    }) |>
+      shiny::bindCache(most.recent.date)
     # }, domain = NULL)
     
   
@@ -191,7 +196,8 @@ app_server <- function(input, output, session) {
         plotly::config(displayModeBar = FALSE) 
       fig
       
-    })
+    }) |>
+      shiny::bindCache(most.recent.date)
     # }, domain = NULL)
     
     
@@ -201,16 +207,20 @@ app_server <- function(input, output, session) {
     
     load_plot_later <- shiny::reactiveVal(1)
     # https://stackoverflow.com/questions/65839072/forcing-render-order-in-r-shiny
+    observe({
+    if (shiny::isolate(load_plot_later() == 1)) {
+      # skip first reactive sequence
+      load_plot_later(0)
+      # launch next reactive sequence
+      shiny::invalidateLater(1, session)
+    } else {
+      
     
     output$subnet_treemap <- plotly::renderPlotly({
       
       
-      if (shiny::isolate(load_plot_later() == 1)) {
-        # skip first reactive sequence
-        load_plot_later(0)
-        # launch next reactive sequence
-        shiny::invalidateLater(1, session)
-      } else {
+   
+        message("plotting treemap")
       
       subnet_16 <- unique(individual.node.data[, c(
         "connected_node_ip_subnet_16", "spy_color_subnet_16")])
@@ -266,8 +276,13 @@ app_server <- function(input, output, session) {
       
       fig
 
-      }
       
+      
+    })  |>
+      shiny::bindCache(most.recent.date)
+    
+    }
+    
     })
     
   # })

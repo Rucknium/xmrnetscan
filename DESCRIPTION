@@ -18,6 +18,7 @@ BugReports: https://github.com/Rucknium/xmrnetscan/issues
 Depends: 
     R (>= 4.2)
 Imports: 
+    cachem,
     config,
     data.table,
     DBI,

@@ -3,6 +3,7 @@
 .DS_Store
 .quarto
 inst/bin/*
+cache_dir
 
 # R gitignore template from https://github.com/github/gitignore/blob/master/R.gitignore
 # And added *.Rproj
