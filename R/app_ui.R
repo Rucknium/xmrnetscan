@@ -16,6 +16,7 @@ app_ui <- function(request) {
       shiny::h4(shiny::HTML('The open source code for this web app is available <a href="https://github.com/Rucknium/xmrnetscan">here</a>.')),
       shiny::br(),
       plotly::plotlyOutput("line_chart1", height = "500px") |>
+        shinycssloaders::withSpinner(size = 3) |>
         shinyhelper::helper(colour = "red", type = "inline",
           content = 'Reachable nodes are classified as suspected spy nodes if they are marked as spies by the <a href="https://github.com/Boog900/p2p-proxy-checker">p2p-proxy-checker</a>. All other reachable nodes (i.e. nodes that accept inbound connections) are classified as honest reachable nodes. The number of unreachable nodes is estimated by counting the unique IP addresses in all of the peerlists shared by reachable nodes during the p2p handshake.'),
       shiny::br(),
@@ -30,7 +31,9 @@ app_ui <- function(request) {
       shiny::br(),
       shiny::h4("Node IP address interactive treemap, grouped by /16 subnet"),
       shinycssloaders::withSpinner(
-        plotly::plotlyOutput("subnet_treemap", height = "800px"), size = 3, caption = "Subnet treemap")
+        plotly::plotlyOutput("subnet_treemap", height = "800px"), size = 3, caption = "Subnet treemap"),
+      shiny::hr(),
+      shiny::h4(shiny::HTML('Created by <a href="https://github.com/Rucknium">Rucknium</a> at the <a href="https://github.com/monero-project/research-lab">Monero Research Lab</a>'))
     )
   )
 }
