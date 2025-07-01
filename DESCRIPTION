@@ -1,6 +1,6 @@
 Package: xmrnetscan
 Title: Shiny App with with Monero Node Data Collected from Network Scans
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     c(person(family = "Rucknium",
              role = c("cre", "aut", "cph"),
