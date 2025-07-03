@@ -99,7 +99,7 @@ async fn main() {
     // If collecting peer lists, only use one thread so that data is written to
     // peer_lists.txt seqentially.
     let n_semaphore_permits: usize = match Cli::parse().collect_peer_lists {
-        true => 1,
+        true => 10,
         false => 100
     };
     let _ = CONNECTION_SEMAPHORE.set(Semaphore::new(n_semaphore_permits));
@@ -184,14 +184,14 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
     let _guard = CONNECTION_SEMAPHORE.get().unwrap().acquire().await.unwrap();
     
     if Cli::parse().collect_peer_lists {
-        let mut peer_list_file = OpenOptions::new()
-        .create(true)
+        let mut handshake_attempts_file = OpenOptions::new()
+            .create(true)
             .append(true)
-            .open("handshake_data.txt")
+            .open("handshake_attempts.txt")
             .unwrap();
     
-        peer_list_file
-            .write_fmt(format_args!("BEGINPEER\nconnected_node@{addr:?}\n"))
+        handshake_attempts_file
+            .write_fmt(format_args!("connected_node@{addr:?}\n"))
             .unwrap();
     }
 
@@ -210,12 +210,6 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
 
     if Cli::parse().collect_peer_lists {
 
-        let mut peer_list_file = OpenOptions::new()
-        .create(true)
-            .append(true)
-            .open("handshake_data.txt")
-            .unwrap();
-
         let rpc_port = client.info.basic_node_data.rpc_port;
         let pruning_seed = client.info.pruning_seed;
         let peer_id = client.info.basic_node_data.peer_id;
@@ -223,8 +217,14 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
         let core_sync_data = client.info.core_sync_data.clone();
         let my_port = client.info.basic_node_data.my_port;
 
-        peer_list_file
-            .write_fmt(format_args!("rpc_port@{rpc_port:?}\npruning_seed@{pruning_seed:?}@\npeer_id@{peer_id:?}\nsupport_flags@{support_flags:?}\ncore_sync_data@{core_sync_data:?}\nmy_port@{my_port:?}\n" ))
+        let mut handshake_data_file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("handshake_data.txt")
+            .unwrap();
+
+        handshake_data_file
+            .write_fmt(format_args!("BEGINPEER\nconnected_node@{addr:?}\nrpc_port@{rpc_port:?}\npruning_seed@{pruning_seed:?}\npeer_id@{peer_id:?}\nsupport_flags@{support_flags:?}\ncore_sync_data@{core_sync_data:?}\nmy_port@{my_port:?}\n" ))
             .unwrap();
     }
 
@@ -292,26 +292,30 @@ impl Service<AddressBookRequest<ClearNet>> for AddressBookService {
     fn call(&mut self, req: AddressBookRequest<ClearNet>) -> Self::Future {
         async {
             match req {
-                AddressBookRequest::IncomingPeerList(peers) => {
+                AddressBookRequest::IncomingPeerList(internal_peer_id, peers) => {
 
                     if Cli::parse().collect_peer_lists {
-                        
-                        let mut peer_list_file = OpenOptions::new()
-                          .create(true)
-                          .append(true)
-                          .open("handshake_data.txt")
-                          .unwrap();
-                        for mut peer in peers {
-                            peer.adr.make_canonical();
-                            let peer_adr = peer.adr;
-                            peer_list_file
-                              .write_fmt(format_args!("peerlist_peer@{peer_adr:?}\n"))
-                              .unwrap();
 
-                            if SCANNED_NODES.insert(peer.adr) {
+                        let peer_adr_canon: Vec<SocketAddr> = peers.into_iter().map(|mut e| {
+                            e.adr.make_canonical();
+                            e.adr
+                            }).collect();
+                        
+                        let mut peerlist_file = OpenOptions::new()
+                            .create(true)
+                            .append(true)
+                            .open("peerlists.txt")
+                            .unwrap();
+
+                        peerlist_file
+                            .write_fmt(format_args!("connected_node@{internal_peer_id:?}peerlist_peer@{peer_adr_canon:?}\n"))
+                            .unwrap();
+
+                        for peer in peer_adr_canon {
+                            if SCANNED_NODES.insert(peer) {
                                 tokio::spawn(async move {
-                                    if check_node(peer.adr).await.is_err() {
-                                        SCANNED_NODES.remove(&peer.adr);
+                                    if check_node(peer).await.is_err() {
+                                        SCANNED_NODES.remove(&peer);
                                     }
                                 });
                             }
