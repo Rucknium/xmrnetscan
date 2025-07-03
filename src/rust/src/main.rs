@@ -132,12 +132,12 @@ async fn main() {
 
     conn.execute(
         "CREATE TABLE handshake_data (
-            connected_node  TEXT
-            rpc_port        INTEGER
-            pruning_seed    TEXT
-            peer_id         BIGINT
-            support_flags   TEXT
-            core_sync_data  TEXT
+            connected_node  TEXT,
+            rpc_port        INTEGER,
+            pruning_seed    TEXT,
+            peer_id         BIGINT,
+            support_flags   TEXT,
+            core_sync_data  TEXT,
             my_port         INTEGER
         )",
         [],
@@ -147,7 +147,7 @@ async fn main() {
 
     conn.execute(
         "CREATE TABLE peerlists (
-            connected_node  TEXT
+            connected_node  TEXT,
             peerlist        TEXT
         )",
         [],
