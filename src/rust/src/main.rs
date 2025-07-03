@@ -63,6 +63,7 @@ use cuprate_wire::{
 };
 
 use clap::Parser;
+use tokio_sqlite::Connection;
 
 /// A simple tool to find all the reachable nodes on the Monero P2P network. It works by recursively connecting to
 /// every peer we are told about in a peer list message, starting by connecting to the seed nodes.
@@ -94,8 +95,67 @@ static BAD_PEERS_CHANNEL: OnceLock<mpsc::Sender<(SocketAddr, Vec<u64>, bool)>> =
 /// A [`Semaphore`] to limit the amount of concurrent connection attempts so we don't overrun ourself.
 static CONNECTION_SEMAPHORE: OnceLock<Semaphore> = OnceLock::new();
 
+
+struct HandshakeAttempt {
+    connected_node: String,
+}
+
+struct HandshakeData {
+    connected_node: String,
+    rpc_port: u16,
+    pruning_seed: String,
+    peer_id: i64,
+    support_flags: String,
+    core_sync_data: String,
+    my_port: u32
+}
+
+struct Peerlists {
+    connected_node: String,
+    peerlist: String,
+}
+
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
+
+    let mut conn = Connection::open("crawler-netscan.db").await.unwrap();
+
+    conn.execute(
+        "CREATE TABLE handshake_attempts (
+            connected_node  TEXT
+        )",
+        [],
+    )
+    .await
+    .unwrap();
+
+    conn.execute(
+        "CREATE TABLE handshake_data (
+            connected_node  TEXT
+            rpc_port        INTEGER
+            pruning_seed    TEXT
+            peer_id         BIGINT
+            support_flags   TEXT
+            core_sync_data  TEXT
+            my_port         INTEGER
+        )",
+        [],
+    )
+    .await
+    .unwrap();
+
+    conn.execute(
+        "CREATE TABLE peerlists (
+            connected_node  TEXT
+            peerlist        TEXT
+        )",
+        [],
+    )
+    .await
+    .unwrap();
+
+
     // If collecting peer lists, only use one thread so that data is written to
     // peer_lists.txt seqentially.
     let n_semaphore_permits: usize = match Cli::parse().collect_peer_lists {
@@ -184,15 +244,20 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
     let _guard = CONNECTION_SEMAPHORE.get().unwrap().acquire().await.unwrap();
     
     if Cli::parse().collect_peer_lists {
-        let mut handshake_attempts_file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("handshake_attempts.txt")
-            .unwrap();
-    
-        handshake_attempts_file
-            .write_fmt(format_args!("connected_node@{addr:?}\n"))
-            .unwrap();
+
+        let handshake_attempt = HandshakeAttempt {
+            connected_node: addr.to_string()
+        };
+
+        let mut conn = Connection::open("crawler-netscan.db").await.unwrap();
+
+        conn.execute(
+            "INSERT INTO handshake_attempts (connected_node) VALUES ($1)",
+            [handshake_attempt.connected_node.into()],
+        )
+        .await
+        .unwrap();
+
     }
 
     // Grab the connector from the `CONNECTOR` global
@@ -217,15 +282,33 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
         let core_sync_data = client.info.core_sync_data.clone();
         let my_port = client.info.basic_node_data.my_port;
 
-        let mut handshake_data_file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("handshake_data.txt")
+        let handshake_data = HandshakeData {
+            connected_node: addr.to_string(),
+            rpc_port: rpc_port,
+            pruning_seed: format_args!("{pruning_seed:?}").to_string(),
+            peer_id: peer_id as i64,
+            support_flags: format_args!("{support_flags:?}").to_string(),
+            core_sync_data: format_args!("{core_sync_data:?}").to_string(),
+            my_port: my_port
+        };
+
+        let mut conn = Connection::open("crawler-netscan.db").await.unwrap();
+
+        conn.execute(
+            "INSERT INTO handshake_data (connected_node, rpc_port, pruning_seed, peer_id, support_flags, core_sync_data, my_port) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            [
+                handshake_data.connected_node.into(),
+                handshake_data.rpc_port.into(),
+                handshake_data.pruning_seed.into(),
+                handshake_data.peer_id.into(),
+                handshake_data.support_flags.into(),
+                handshake_data.core_sync_data.into(),
+                handshake_data.my_port.into()
+            ],
+            )
+            .await
             .unwrap();
 
-        handshake_data_file
-            .write_fmt(format_args!("BEGINPEER\nconnected_node@{addr:?}\nrpc_port@{rpc_port:?}\npruning_seed@{pruning_seed:?}\npeer_id@{peer_id:?}\nsupport_flags@{support_flags:?}\ncore_sync_data@{core_sync_data:?}\nmy_port@{my_port:?}\n" ))
-            .unwrap();
     }
 
 
@@ -300,15 +383,22 @@ impl Service<AddressBookRequest<ClearNet>> for AddressBookService {
                             e.adr.make_canonical();
                             e.adr
                             }).collect();
-                        
-                        let mut peerlist_file = OpenOptions::new()
-                            .create(true)
-                            .append(true)
-                            .open("peerlists.txt")
-                            .unwrap();
 
-                        peerlist_file
-                            .write_fmt(format_args!("connected_node@{internal_peer_id:?}peerlist_peer@{peer_adr_canon:?}\n"))
+                        let peerlists = Peerlists {
+                            connected_node: format_args!("{internal_peer_id:?}").to_string(),
+                            peerlist: format_args!("{peer_adr_canon:?}").to_string()
+                        };
+
+                        let mut conn = Connection::open("crawler-netscan.db").await.unwrap();
+
+                        conn.execute(
+                            "INSERT INTO peerlists (connected_node, peerlist) VALUES ($1, $2)",
+                            [
+                                peerlists.connected_node.into(),
+                                peerlists.peerlist.into()
+                            ],
+                            )
+                            .await
                             .unwrap();
 
                         for peer in peer_adr_canon {
