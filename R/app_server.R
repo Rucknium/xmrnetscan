@@ -241,12 +241,14 @@ app_server <- function(input, output, session) {
   
   # shiny::observe({
     
-    load_plot_later <- shiny::reactiveVal(1)
+    load_plot_later_1 <- shiny::reactiveVal(1)
+    load_plot_later_2 <- shiny::reactiveVal(1)
+    load_plot_later_3 <- shiny::reactiveVal(1)
     # https://stackoverflow.com/questions/65839072/forcing-render-order-in-r-shiny
     observe({
-    if (shiny::isolate(load_plot_later() == 1)) {
+    if (shiny::isolate(load_plot_later_1() == 1)) {
       # skip first reactive sequence
-      load_plot_later(0)
+      load_plot_later_1(0)
       # launch next reactive sequence
       shiny::invalidateLater(1, session)
     } else {
@@ -318,6 +320,12 @@ app_server <- function(input, output, session) {
     })  |>
       shiny::bindCache(most.recent.date)
     
+    if (shiny::isolate(load_plot_later_2() == 1)) {
+      # skip first reactive sequence
+      load_plot_later_2(0)
+      # launch next reactive sequence
+      shiny::invalidateLater(1, session)
+    } else {
     
     output$asn_treemap <- plotly::renderPlotly({
       
@@ -391,7 +399,12 @@ app_server <- function(input, output, session) {
     })  |>
       shiny::bindCache(most.recent.date)
     
-    
+    if (shiny::isolate(load_plot_later_3() == 1)) {
+      # skip first reactive sequence
+      load_plot_later_3(0)
+      # launch next reactive sequence
+      shiny::invalidateLater(1, session)
+    } else {
     
     
     output$individual_node_table <- DT::renderDataTable({
@@ -431,13 +444,14 @@ app_server <- function(input, output, session) {
       # and https://stackoverflow.com/questions/51730816/remove-showing-1-to-n-of-n-entries-shiny-dt
       # and https://rstudio.github.io/DT/options.html
       
-    })
-    #, server = FALSE) |>
-    #  shiny::bindCache(most.recent.date) # , domain = NULL)
+    }, server = FALSE) |>
+      shiny::bindCache(most.recent.date) # , domain = NULL)
     # Must have server = FALSE to make it cachable. See help
     # file for DT::renderDataTable()
     
     
+    }
+    }
     }
     
     })
