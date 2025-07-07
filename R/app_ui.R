@@ -33,10 +33,16 @@ app_ui <- function(request) {
       shiny::h5("Click on the boxes to get more information about each node"),
       shinycssloaders::withSpinner(
         plotly::plotlyOutput("subnet_treemap", height = "800px"), size = 3, caption = "Subnet treemap"),
+      shiny::h4("Node IP address interactive treemap, grouped by Autonomous System"),
+      shiny::h5("Click on the boxes to get more information about each node"),
+      shinycssloaders::withSpinner(
+        plotly::plotlyOutput("asn_treemap", height = "800px"), size = 3, caption = "Autonomous System (AS) treemap"),
+      shinycssloaders::withSpinner(
+        DT::dataTableOutput("individual_node_table"), size = 3, caption = "Node data table"),
       shiny::hr(),
       shiny::h4(shiny::HTML('Created by <a href="https://github.com/Rucknium">Rucknium</a> at the <a href="https://github.com/monero-project/research-lab">Monero Research Lab</a>')),
       shiny::h5(shiny::HTML('Autonomous System (AS) data from <a href="https://www.team-cymru.com/ip-asn-mapping">Team Cymru</a>.')),
-      shiny::h5(shiny::HTML('Domain-IP address association data from <a href="https://xmr.ditatompel.com/remote-nodes">Team ditatompel</a>.'))
+      shiny::h5(shiny::HTML('Domain-IP address association data from <a href="https://xmr.ditatompel.com/remote-nodes">ditatompel</a>.'))
     )
   )
 }

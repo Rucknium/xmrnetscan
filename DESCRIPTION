@@ -23,6 +23,7 @@ Imports:
     cymruservices,
     data.table,
     DBI,
+    DT,
     future,
     future.apply,
     golem,
