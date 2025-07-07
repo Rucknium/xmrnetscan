@@ -267,6 +267,7 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
 
 
 get.raw.data <- function(skipped.dates, confirm.rpc = TRUE, get.domains = TRUE) {
+  
   date.dirs <- list.dirs("raw", full.names = FALSE, recursive = FALSE)
   date.dirs <- date.dirs[date.dirs != ""]
   # rm top level dir
@@ -278,7 +279,7 @@ get.raw.data <- function(skipped.dates, confirm.rpc = TRUE, get.domains = TRUE) 
   
   if (length(date.dirs) == 0) {
     message(base::date(), " No new data")
-    return(invisible(NULL))
+    return(NULL)
   }
   
   processed.data <- list(daily.data = NULL, connections.by.ip = NULL)
@@ -402,6 +403,8 @@ unique(connected_node_ip)
   
   processed.data <- get.raw.data(skipped.dates = date.have.data$date,
     confirm.rpc = confirm.rpc, get.domains = get.domains)
+  
+  if (length(processed.data) == 0) { return(invisible(NULL)) }
   
   if (query.asn) {
     
