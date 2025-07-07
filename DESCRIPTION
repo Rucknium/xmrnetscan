@@ -19,6 +19,7 @@ Depends:
     R (>= 4.2)
 Imports: 
     cachem,
+    concstats,
     config,
     cymruservices,
     data.table,
