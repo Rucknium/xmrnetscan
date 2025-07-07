@@ -171,11 +171,11 @@ app_server <- function(input, output, session) {
       
       data_list <- split(data, seq_len(nrow(data)))
 
-      fig <- plotly::plot_ly(name = "RPC available", data = data, color = xmr.orange,
-        x = ~date, y = ~n_honest_rpc_available, type = 'scatter', fill = 'tozeroy',
+      fig <- plotly::plot_ly(name = "RPC enabled", data = data, color = xmr.orange,
+        x = ~date, y = ~n_honest_rpc_confirmed, type = 'scatter', fill = 'tozeroy',
         mode = 'lines', line = list(color = 'black'),
         customdata = data_list,
-        hovertemplate = "Nodes: %{y} (%{customdata.percent_honest_rpc_available:.0f}% of total)") |>
+        hovertemplate = "Nodes: %{y} (%{customdata.percent_honest_rpc_confirmed:.0f}% of total)") |>
         plotly::layout(xaxis = list(rangeslider = list(visible = TRUE),
           tickformatstops = tickformatstops.arg))
       fig <- fig |>
@@ -218,9 +218,7 @@ app_server <- function(input, output, session) {
     
     output$subnet_treemap <- plotly::renderPlotly({
       
-      
-   
-        message("plotting treemap")
+      message("plotting treemap")
       
       subnet_16 <- unique(individual.node.data[, c(
         "connected_node_ip_subnet_16", "spy_color_subnet_16")])
@@ -238,7 +236,7 @@ app_server <- function(input, output, session) {
       data.table::setorder(display.data, connected_node_ip)
       # necessary to line up the data in the treemap display
       
-      display.data[, rpc_available := ifelse(rpc_available == 1, "Yes", "No")]
+      display.data[, rpc_confirmed := ifelse(rpc_confirmed == 1, "Yes", "No")]
       display.data[, is_pruned := ifelse(is_pruned == 1, "Yes", "No")]
       display.data[, mrl_ban_list_enabled := ifelse(mrl_ban_list_enabled == 1, "Yes", "No")]
       display.data[, dns_ban_list_enabled := ifelse(dns_ban_list_enabled == 1, "Yes", "No")]
@@ -253,7 +251,7 @@ app_server <- function(input, output, session) {
         marker = list(colors = colors),
         tiling = list(pad = 0),
         customdata = data_list,
-        texttemplate = "IP: %{customdata.connected_node_ip}<br>Port(s): %{customdata.ports}<br>RPC available: %{customdata.rpc_available}<br>Pruned: %{customdata.is_pruned}<br>MRL ban list: %{customdata.mrl_ban_list_enabled}<br>DNS ban list: %{customdata.dns_ban_list_enabled}")
+        texttemplate = "IP: %{customdata.connected_node_ip}<br>Port(s): %{customdata.ports}<br>RPC enabled: %{customdata.rpc_confirmed}<br>Pruned: %{customdata.is_pruned}<br>MRL ban list: %{customdata.mrl_ban_list_enabled}<br>DNS ban list: %{customdata.dns_ban_list_enabled}")
       
       shapes = list(
         list(x0 = 0, y0 = 1, x1 = 0.01, y1 = 0.99, fillcolor = "red", line = list(width = 1)),
