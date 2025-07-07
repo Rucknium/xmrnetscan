@@ -431,8 +431,9 @@ app_server <- function(input, output, session) {
       # and https://stackoverflow.com/questions/51730816/remove-showing-1-to-n-of-n-entries-shiny-dt
       # and https://rstudio.github.io/DT/options.html
       
-    }, server = FALSE) |>
-      shiny::bindCache(most.recent.date) # , domain = NULL)
+    })
+    #, server = FALSE) |>
+    #  shiny::bindCache(most.recent.date) # , domain = NULL)
     # Must have server = FALSE to make it cachable. See help
     # file for DT::renderDataTable()
     
