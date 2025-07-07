@@ -46,7 +46,7 @@ probe.rpc <- function(rpc.urls) {
 
 get.ditatompel.domains <- function() {
   
-  ditatompel.nodes <- trycatch(
+  ditatompel.nodes <- tryCatch(
     RJSONIO::fromJSON(
       RCurl::getForm("https://xmr.ditatompel.com/api/v1/nodes",
         nettype = "mainnet", limit = "10000"
@@ -100,7 +100,7 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
   
   dns.blocklist <- unlist(strsplit(dns.blocklist, ";"))
   
-  data(ban_list)
+  data(ban_list, package = "xmrpeers")
   
   bad_peers <- readLines(paste0(scan.dir, "/bad_peers.txt"))
   
