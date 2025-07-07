@@ -64,8 +64,14 @@ get.ditatompel.domains <- function() {
   # The [[1]] means that if the string is empty, this will give a NULL. Therefore, the
   # record will be skipped
   
-  ditatompel.nodes[ is.na(IP::ip(rpc_domain)), ]
+  ditatompel.nodes <- ditatompel.nodes[ is.na(IP::ip(rpc_domain)), ]
   # If hostname is an IP address, then exclude it
+  
+  ditatompel.nodes <- ditatompel.nodes[, .(rpc_domain = paste0(sort(rpc_domain), collapse = ";")),
+    by = "connected_node_ip"]
+  # Sometimes more than one domain points to the same IP address
+  
+  ditatompel.nodes
   
 }
 
