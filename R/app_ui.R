@@ -34,7 +34,9 @@ app_ui <- function(request) {
       shinycssloaders::withSpinner(
         plotly::plotlyOutput("subnet_treemap", height = "800px"), size = 3, caption = "Subnet treemap"),
       shiny::hr(),
-      shiny::h4(shiny::HTML('Created by <a href="https://github.com/Rucknium">Rucknium</a> at the <a href="https://github.com/monero-project/research-lab">Monero Research Lab</a>'))
+      shiny::h4(shiny::HTML('Created by <a href="https://github.com/Rucknium">Rucknium</a> at the <a href="https://github.com/monero-project/research-lab">Monero Research Lab</a>')),
+      shiny::h5(shiny::HTML('Autonomous System (AS) data from <a href="https://www.team-cymru.com/ip-asn-mapping">Team Cymru</a>.')),
+      shiny::h5(shiny::HTML('Domain-IP address association data from <a href="https://xmr.ditatompel.com/remote-nodes">Team ditatompel</a>.'))
     )
   )
 }

@@ -251,7 +251,7 @@ app_server <- function(input, output, session) {
         marker = list(colors = colors),
         tiling = list(pad = 0),
         customdata = data_list,
-        texttemplate = "IP: %{customdata.connected_node_ip}<br>Port(s): %{customdata.ports}<br>RPC enabled: %{customdata.rpc_confirmed}<br>Pruned: %{customdata.is_pruned}<br>MRL ban list: %{customdata.mrl_ban_list_enabled}<br>DNS ban list: %{customdata.dns_ban_list_enabled}")
+        texttemplate = "IP: %{customdata.connected_node_ip}<br>AS: %{customdata.as_name} (%{customdata.asn})<br> Domain: %{customdata.rpc_domain}<br>Port(s): %{customdata.ports}<br>RPC enabled: %{customdata.rpc_confirmed}<br>Pruned: %{customdata.is_pruned}<br>MRL ban list: %{customdata.mrl_ban_list_enabled}<br>DNS ban list: %{customdata.dns_ban_list_enabled}")
       
       shapes = list(
         list(x0 = 0, y0 = 1, x1 = 0.01, y1 = 0.99, fillcolor = "red", line = list(width = 1)),
