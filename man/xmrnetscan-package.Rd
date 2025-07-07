@@ -4,7 +4,7 @@
 \name{xmrnetscan-package}
 \alias{xmrnetscan}
 \alias{xmrnetscan-package}
-\title{xmrnetscan: Shiny App with with Monero Node Data Collected from Network Scans}
+\title{xmrnetscan: Shiny App with Monero Node Data Collected from Network Scans}
 \description{
 Shiny App with Monero Node Data Collected from Network Scans.
 }

@@ -1,5 +1,5 @@
 Package: xmrnetscan
-Title: Shiny App with with Monero Node Data Collected from Network Scans
+Title: Shiny App with Monero Node Data Collected from Network Scans
 Version: 0.1.0
 Authors@R: 
     c(person(family = "Rucknium",
@@ -20,14 +20,23 @@ Depends:
 Imports: 
     cachem,
     config,
+    cymruservices,
     data.table,
     DBI,
+    future,
+    future.apply,
     golem,
+    IP,
+    parallelly,
     plotly,
+    RCurl,
+    RJSONIO,
     RSQLite,
     shiny,
     shinycssloaders,
-    shinyhelper
+    shinyhelper,
+    stringr,
+    xmrpeers
 Suggests: 
     testthat (>= 3.0.0)
 Remotes: 
