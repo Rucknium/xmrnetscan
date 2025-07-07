@@ -244,9 +244,8 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
     n_honest_rpc_confirmed = sum(rpc_confirmed & !is_spy_node)
   )]
   
-  
-  daily.data[, percent_spy_nodes := 100 * n_spy_nodes / n_nodes]
-  daily.data[, percent_honest_nodes := 100 * n_honest_nodes / n_nodes]
+  daily.data[, percent_spy_nodes := 100 * n_spy_nodes / n_honest_nodes]
+  daily.data[, percent_honest_nodes := 100 * n_honest_nodes / n_honest_nodes]
   daily.data[, percent_unreachable_nodes := 100 * n_unreachable_nodes / n_nodes]
   
   daily.data[, percent_honest_is_pruned := 100 * n_honest_is_pruned / n_honest_nodes]
@@ -353,6 +352,7 @@ percent_honest_rpc_available REAL,
 percent_honest_rpc_confirmed REAL,
 percent_honest_mrl_ban_list_enabled REAL,
 percent_honest_dns_ban_list_enabled REAL,
+herfindahl_hirschman_asn REAL,
 unique(date)
 )")
     # unique(date) prevents the same dates being inserted more than once
@@ -447,10 +447,17 @@ unique(connected_node_ip)
   processed.data[["connections.by.ip"]][is.na(asn), asn := 0]
   processed.data[["connections.by.ip"]][is.na(as_name), as_name := ""]
   
+  hhi <- processed.data[["connections.by.ip"]][asn != 0 & (! is_spy_node), 
+    .(herfindahl_hirschman_asn = concstats::concstats_hhi(table(asn),
+      normalized = TRUE, na.rm = TRUE)), by = "date"]
+  
+  processed.data[["daily.data"]] <- merge(processed.data[["daily.data"]], hhi, by = "date", all.x = TRUE)
+  
+  
   print(str(processed.data[["daily.data"]]))
   
   daily_data.statement <- DBI::dbSendQuery(con,
-    "INSERT OR IGNORE INTO daily_data VALUES (:date,:n_nodes,:n_spy_nodes,:n_honest_nodes,:n_unreachable_nodes,:n_honest_mrl_ban_list_enabled,:n_honest_dns_ban_list_enabled,:n_honest_is_pruned,:n_honest_rpc_available,:n_honest_rpc_confirmed,:percent_spy_nodes,:percent_honest_nodes,:percent_unreachable_nodes,:percent_honest_is_pruned,:percent_honest_rpc_available,:percent_honest_rpc_confirmed,:percent_honest_mrl_ban_list_enabled,:percent_honest_dns_ban_list_enabled)")
+    "INSERT OR IGNORE INTO daily_data VALUES (:date,:n_nodes,:n_spy_nodes,:n_honest_nodes,:n_unreachable_nodes,:n_honest_mrl_ban_list_enabled,:n_honest_dns_ban_list_enabled,:n_honest_is_pruned,:n_honest_rpc_available,:n_honest_rpc_confirmed,:percent_spy_nodes,:percent_honest_nodes,:percent_unreachable_nodes,:percent_honest_is_pruned,:percent_honest_rpc_available,:percent_honest_rpc_confirmed,:percent_honest_mrl_ban_list_enabled,:percent_honest_dns_ban_list_enabled,:herfindahl_hirschman_asn)")
   # "IGNORE" prevents the same data from being inserted more than once
   DBI::dbBind(daily_data.statement, params = processed.data[["daily.data"]])
   DBI::dbClearResult(daily_data.statement)

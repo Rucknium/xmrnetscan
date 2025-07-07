@@ -51,19 +51,19 @@ app_server <- function(input, output, session) {
       
       data_list <- split(data, seq_len(nrow(data)))
       
-      fig <- plotly::plot_ly(name = "Unreachable nodes", data = data,
-        x = ~date, y = ~n_unreachable_nodes, type = 'scatter',
-        mode = 'lines', stackgroup = 'one', line = list(color = 'transparent', fillcolor = xmr.grey),
-        customdata = data_list,
-        hovertemplate = "Nodes: %{y} (%{customdata.percent_unreachable_nodes:.0f}% of total)") |>
+      fig <- plotly::plot_ly(data = data,
+        type = 'scatter',
+        mode = 'lines', stackgroup = 'one',
+        customdata = data_list) |>
         # https://plotly.com/r/hover-text-and-formatting/
         # https://stackoverflow.com/questions/69278251/plotly-including-additional-data-in-hovertemplate
         # https://github.com/plotly/plotly.R/issues/1548
         plotly::layout(xaxis = list(rangeslider = list(visible = TRUE),
           tickformatstops = tickformatstops.arg)) |>
-        plotly::add_trace(y = ~n_honest_nodes, name = "Honest reachable nodes", fillcolor = xmr.orange,
+        plotly::add_trace(y = ~n_honest_nodes, x = ~date, name = "Honest reachable nodes", fillcolor = xmr.orange,
           hovertemplate = "Nodes: %{y} (%{customdata.percent_honest_nodes:.0f}% of total)") |>
-        plotly::add_trace(y = ~n_spy_nodes, name = "Suspected spy nodes", fillcolor = "red",
+        plotly::add_trace(y = ~n_spy_nodes, x = ~date, name = "Suspected spy nodes", fillcolor = "red",
+          line = list(color = "transparent"),
           hovertemplate = "Nodes: %{y} (%{customdata.percent_spy_nodes:.0f}% of total)")
       fig <- fig |>
         plotly::layout(
@@ -184,6 +184,39 @@ app_server <- function(input, output, session) {
       fig <- fig |>
         plotly::layout(
           title = list(text = "Estimated number of honest nodes\nwith RPC enabled"),
+          margin = list(t = 100, l = 0, r = 0),
+          xaxis = list(title = '',
+            zerolinecolor = '#ffff',
+            zerolinewidth = 2,
+            gridcolor = 'ffff'),
+          yaxis = list(title = '',
+            zerolinecolor = '#ffff',
+            zerolinewidth = 2,
+            gridcolor = 'ffff',
+            rangemode = "tozero"),
+          plot_bgcolor= '#f2f8ee', hovermode = 'x', paper_bgcolor = '#f2f8ee',
+          legend = list(orientation = "h", xanchor = "center", x = 0.5, yanchor = "top", y = 1.1)) |>
+        plotly::config(displayModeBar = FALSE) 
+      fig
+      
+    }) |>
+      shiny::bindCache(most.recent.date)
+    # }, domain = NULL)
+    
+    
+    
+    output$line_chart5 <- plotly::renderPlotly({
+      
+      data <- daily.data
+      
+      fig <- plotly::plot_ly(name = "Herfindahl-Hirschman Index", data = data, color = xmr.orange,
+        x = ~date, y = ~herfindahl_hirschman_asn, type = 'scatter', fill = 'tozeroy',
+        mode = 'lines', line = list(color = 'black')) |>
+        plotly::layout(xaxis = list(rangeslider = list(visible = TRUE),
+          tickformatstops = tickformatstops.arg))
+      fig <- fig |>
+        plotly::layout(
+          title = list(text = "Herfindahl-Hirschman Index of Autonomous System (AS) concentration\n(honest nodes only)"),
           margin = list(t = 100, l = 0, r = 0),
           xaxis = list(title = '',
             zerolinecolor = '#ffff',

@@ -18,7 +18,7 @@ app_ui <- function(request) {
       plotly::plotlyOutput("line_chart1", height = "500px") |>
         shinycssloaders::withSpinner(size = 3) |>
         shinyhelper::helper(colour = "red", type = "inline",
-          content = 'Reachable nodes are classified as suspected spy nodes if they are marked as spies by the <a href="https://github.com/Boog900/p2p-proxy-checker">p2p-proxy-checker</a>. All other reachable nodes (i.e. nodes that accept inbound connections) are classified as honest reachable nodes. The number of unreachable nodes is estimated by counting the unique IP addresses in all of the peerlists shared by reachable nodes during the p2p handshake.'),
+          content = 'Reachable nodes are classified as suspected spy nodes if they are marked as spies by the <a href="https://github.com/Boog900/p2p-proxy-checker">p2p-proxy-checker</a>. All other reachable nodes (i.e. nodes that accept inbound connections) are classified as honest reachable nodes. The number of unreachable nodes is difficult to estimate and is not displayed here.'),
       shiny::br(),
       plotly::plotlyOutput("line_chart2", height = "500px") |>
         shinyhelper::helper(colour = "red", type = "inline",
@@ -37,6 +37,10 @@ app_ui <- function(request) {
       shiny::h5("Click on the boxes to get more information about each node"),
       shinycssloaders::withSpinner(
         plotly::plotlyOutput("asn_treemap", height = "800px"), size = 3, caption = "Autonomous System (AS) treemap"),
+      shiny::br(),
+      plotly::plotlyOutput("line_chart5", height = "500px") |>
+        shinyhelper::helper(colour = "red", type = "inline",
+          content = 'The <a href="https://en.wikipedia.org/wiki/Herfindahl%E2%80%93Hirschman_index">Herfindahl–Hirschman (HH) Index</a> is a metric of the concentration of nodes in Autonomous Systems (ASes). A higher HH Index means that a large number of nodes are concentrated in just a few ASes.'), 
       shinycssloaders::withSpinner(
         DT::dataTableOutput("individual_node_table"), size = 3, caption = "Node data table"),
       shiny::hr(),
