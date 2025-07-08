@@ -13,21 +13,33 @@ output: github_document
 )
 ```
 
-# `{xmrnetscan}`
+# `xmrnetscan`
 
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-`{xmrnetscan}` is an alpha project. Expect breaking changes in future versions.
+`xmrnetscan` is an alpha project. Expect breaking changes in future versions.
+
+## Live deployment
+
+An accessible live deployment of this app is available at [moneronet.info](https://moneronet.info).
 
 ## Installation
 
-You can install the development version of `{xmrnetscan}` like so:
+You can install the development version of `xmrnetscan` like so:
 
 Install R. Linux users should install the `r-base` and `r-base-dev` system packages.
 
-You can install the development version of `{xmrnetscan}` from [GitHub](https://github.com/) if you have `git` and `curl` installed on your system with:
+Install the Rust toolchain. The easiest way to do this is following instructions at [rustup](https://rustup.rs).
+
+You may need the `libsqlite3-dev` system package. To install it on Ubuntu- or Debian-based Linux systems, input this in your terminal console:
+
+```bash
+sudo apt-get install libsqlite3-dev
+```
+
+You can install the development version of `xmrnetscan` from [GitHub](https://github.com/) if you have `git` and `curl` installed on your system with:
 
 ```{r, eval = FALSE}
 install.packages("remotes")
@@ -36,7 +48,7 @@ remotes::install_github("Rucknium/xmrnetscan", upgrade = FALSE)
 
 ## Run
 
-You can launch the application by running:
+You can launch the application locally by running:
 
 ```{r, eval = FALSE}
 xmrnetscan::run_app()
