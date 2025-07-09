@@ -29,18 +29,33 @@ app_ui <- function(request) {
         shiny::column(6, plotly::plotlyOutput("line_chart4", height = "500px"))
       ),
       shiny::br(),
+      shiny::tabsetPanel(
+        shiny::tabPanel("Static image treemap", 
+          shiny::imageOutput("subnet_treemap_static", width = "1000px", height = "1000px") ),
+        shiny::tabPanel("Interactive treemap (long loading time)",
       shiny::h4("Node IP address interactive treemap, grouped by /16 subnet"),
       shiny::h5("Click on the boxes to get more information about each node"),
       shinycssloaders::withSpinner(
-        plotly::plotlyOutput("subnet_treemap", height = "800px"), size = 3, caption = "Subnet treemap"),
+        plotly::plotlyOutput("subnet_treemap", height = "800px"), size = 3, caption = "Subnet treemap")
+          )),
+      shiny::br(),
+      shiny::tabsetPanel(
+        shiny::tabPanel("Static image treemap",
+          shiny::imageOutput("asn_treemap_static", width = "1000px", height = "1000px") )
+          ,
+        shiny::tabPanel("Interactive treemap (long loading time)",
       shiny::h4("Node IP address interactive treemap, grouped by Autonomous System"),
       shiny::h5("Click on the boxes to get more information about each node"),
       shinycssloaders::withSpinner(
-        plotly::plotlyOutput("asn_treemap", height = "800px"), size = 3, caption = "Autonomous System (AS) treemap"),
+        plotly::plotlyOutput("asn_treemap", height = "800px"), size = 3, caption = "Autonomous System (AS) treemap")
+          )
+        ),
       shiny::br(),
       plotly::plotlyOutput("line_chart5", height = "500px") |>
         shinyhelper::helper(colour = "red", type = "inline",
           content = 'The <a href="https://en.wikipedia.org/wiki/Herfindahl%E2%80%93Hirschman_index">Herfindahl–Hirschman (HH) Index</a> is a metric of the concentration of nodes in Autonomous Systems (ASes). A higher HH Index means that a large number of nodes are concentrated in just a few ASes.'), 
+      shiny::br(),
+      shiny::h4("Search and filter individual node data"),
       shinycssloaders::withSpinner(
         DT::dataTableOutput("individual_node_table"), size = 3, caption = "Node data table"),
       shiny::hr(),

@@ -237,6 +237,14 @@ app_server <- function(input, output, session) {
     # }, domain = NULL)
     
     
+    output$subnet_treemap_static <- shiny::renderImage({
+      list(src = paste0("data-raw/net-scans/images/treemap-subnet/", most.recent.date, ".png"))
+    }, deleteFile = FALSE)
+    
+    output$asn_treemap_static <- shiny::renderImage({
+      list(src = paste0("data-raw/net-scans/images/treemap-asn/", most.recent.date, ".png"))
+    }, deleteFile = FALSE)
+    
     
   
   # shiny::observe({
@@ -317,8 +325,7 @@ app_server <- function(input, output, session) {
       fig
 
       
-    })  |>
-      shiny::bindCache(most.recent.date)
+    }) # |> shiny::bindCache(most.recent.date)
     
     if (shiny::isolate(load_plot_later_2() == 1)) {
       # skip first reactive sequence
@@ -396,8 +403,7 @@ app_server <- function(input, output, session) {
       fig
       
       
-    })  |>
-      shiny::bindCache(most.recent.date)
+    }) # |> shiny::bindCache(most.recent.date)
     
     if (shiny::isolate(load_plot_later_3() == 1)) {
       # skip first reactive sequence

@@ -27,6 +27,7 @@ Imports:
     DT,
     future,
     future.apply,
+    ggplot2,
     golem,
     IP,
     parallelly,
@@ -38,6 +39,7 @@ Imports:
     shinycssloaders,
     shinyhelper,
     stringr,
+    treemapify,
     xmrpeers
 Suggests: 
     testthat (>= 3.0.0)
