@@ -480,3 +480,126 @@ unique(connected_node_ip)
   
 }
 
+
+
+
+
+
+
+
+
+
+#' Create daily static plot images
+#'
+#' @param db.file  Character. File path and name of the SQLite database to update.
+#' @param plot.width Numeric. Width of the plot image, in pixels.
+#' @param plot.height Numeric. height of the plot image, in pixels.
+#'
+#' @return NULL (invisible)
+#' @export
+#'
+#' @examples
+#' 1
+create.plot.images <- function(db.file  = "netscan-test.db",
+  plot.width = 1000, plot.height = 1000) {
+  # Assumes we are in this directory: data-raw/net-scans/
+  
+  con <- DBI::dbConnect(RSQLite::SQLite(), db.file)
+  on.exit(DBI::dbDisconnect(con))
+  daily.data <- DBI::dbGetQuery(con, "SELECT * FROM daily_data")
+  
+  most.recent.date <- sort(daily.data$date, decreasing = TRUE)[1]
+  
+  display.data <- DBI::dbGetQuery(con,
+    paste0("SELECT * FROM individual_node_data WHERE date == '", most.recent.date, "'"))
+  
+  data.table::setDT(display.data)
+  
+  display.data[, y := 1]
+  display.data[, type := ifelse(is_spy_node == 1, "spy", "honest")]
+  
+  display.data[, subnet.16 := gsub("[.][0-9]{1,3}[.][0-9]{1,3}$", "", connected_node_ip)]
+  display.data[, subnet.24 := gsub("[.][0-9]{1,3}$", "", connected_node_ip)]
+  
+  treemap.subnet.filepath <- paste0("images/treemap-subnet/", most.recent.date, ".png")
+  
+  if ( ! file.exists(treemap.subnet.filepath)) {
+    
+    message("Creating plot at ", treemap.subnet.filepath)
+    
+    png(treemap.subnet.filepath, width = plot.width, height = plot.height)
+    
+    plot.output <- ggplot2::ggplot(display.data, ggplot2::aes(area = y, fill = type,
+      subgroup = subnet.16, subgroup2 = subnet.24)) +
+      ggplot2::labs(title = "Subnet treemap of honest and spy nodes",
+        subtitle = "Black perimeters indicate /16 subnet groupings. Yellow indicates /24 subnets.") +
+      treemapify::geom_treemap() +
+      treemapify::geom_treemap_subgroup2_border(colour = "yellow", size = 1.5) +
+      treemapify::geom_treemap_subgroup_border(color = "black", size = 2) +
+      ggplot2::scale_fill_manual(name = "Node type:",
+        values = c(scales::muted("blue", l = 40), scales::muted("red", l = 60))) +
+      treemapify::geom_treemap_subgroup_text(colour = "white", place = "centre", grow = TRUE, min.size = 8) +
+      ggplot2::theme(plot.title = ggplot2::element_text(size = 25),
+        plot.subtitle = ggplot2::element_text(size = 18),
+        legend.title = ggplot2::element_text(size = 18),
+        legend.text = ggplot2::element_text(size = 18),
+        legend.position = "top")
+    
+    print(plot.output)
+    
+    dev.off()
+    
+  }
+  
+  
+  data.table::setDT(display.data)
+  
+  display.data[, y := 1]
+  
+  display.data[, type := ifelse(is_spy_node == 1, "spy", "honest")]
+  
+  treemap.asn.filepath <- paste0("images/treemap-asn/", most.recent.date, ".png")
+  
+  if ( ! file.exists(treemap.asn.filepath)) {
+    
+    message("Creating plot at ", treemap.asn.filepath)
+    
+    png(treemap.asn.filepath, width = plot.width, height = plot.height)
+    
+    plot.output <- ggplot2::ggplot(display.data, ggplot2::aes(area = y, fill = type, subgroup = as_name)) +
+      ggplot2::labs(title = "Autonomous System (AS) treemap of honest and spy nodes",
+        subtitle = "Yellow perimeters indicate Autonomous System (AS) groupings.") +
+      treemapify::geom_treemap() +
+      treemapify::geom_treemap_subgroup_border(color = "yellow", size = 2) +
+      ggplot2::scale_fill_manual(name = "Node type:",
+        values = c(scales::muted("blue", l = 40), scales::muted("red", l = 60))) +
+      treemapify::geom_treemap_subgroup_text(colour = "white", place = "centre", grow = TRUE, min.size = 8) +
+      ggplot2::theme(plot.title = ggplot2::element_text(size = 25),
+        plot.subtitle = ggplot2::element_text(size = 18),
+        legend.title = ggplot2::element_text(size = 18),
+        legend.text = ggplot2::element_text(size = 18),
+        legend.position = "top")
+    
+    print(plot.output)
+    
+    dev.off()
+    
+  }
+  
+  return(invisible(NULL))
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
