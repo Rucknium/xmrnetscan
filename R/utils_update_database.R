@@ -240,18 +240,18 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
   
   daily.data <- connections.by.ip[, .(
     n_nodes = .N + n_unreachable_nodes,
-    n_spy_nodes = sum(is_spy_node),
-    n_honest_nodes = sum(!is_spy_node),
+    n_spy_nodes = sum(is_spy_node, na.rm = TRUE),
+    n_honest_nodes = sum(!is_spy_node, na.rm = TRUE),
     n_unreachable_nodes = n_unreachable_nodes,
-    n_honest_mrl_ban_list_enabled = sum(mrl_ban_list_enabled & !is_spy_node),
-    n_honest_dns_ban_list_enabled = sum(dns_ban_list_enabled & !is_spy_node),
-    n_honest_is_pruned = sum(is_pruned & !is_spy_node),
-    n_honest_rpc_available = sum(rpc_available & !is_spy_node),
-    n_honest_rpc_confirmed = sum(rpc_confirmed & !is_spy_node)
+    n_honest_mrl_ban_list_enabled = sum(mrl_ban_list_enabled & !is_spy_node, na.rm = TRUE),
+    n_honest_dns_ban_list_enabled = sum(dns_ban_list_enabled & !is_spy_node, na.rm = TRUE),
+    n_honest_is_pruned = sum(is_pruned & !is_spy_node, na.rm = TRUE),
+    n_honest_rpc_available = sum(rpc_available & !is_spy_node, na.rm = TRUE),
+    n_honest_rpc_confirmed = sum(rpc_confirmed & !is_spy_node, na.rm = TRUE)
   )]
   
-  daily.data[, percent_spy_nodes := 100 * n_spy_nodes / n_honest_nodes]
-  daily.data[, percent_honest_nodes := 100 * n_honest_nodes / n_honest_nodes]
+  daily.data[, percent_spy_nodes := 100 * n_spy_nodes / (n_spy_nodes + n_honest_nodes)]
+  daily.data[, percent_honest_nodes := 100 * n_honest_nodes / (n_spy_nodes + n_honest_nodes)]
   daily.data[, percent_unreachable_nodes := 100 * n_unreachable_nodes / n_nodes]
   
   daily.data[, percent_honest_is_pruned := 100 * n_honest_is_pruned / n_honest_nodes]
