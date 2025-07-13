@@ -4,6 +4,7 @@
 .quarto
 inst/bin/*
 cache_dir
+*.pid
 
 # R gitignore template from https://github.com/github/gitignore/blob/master/R.gitignore
 # And added *.Rproj
