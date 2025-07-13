@@ -9,6 +9,8 @@ function(msg=""){
 
 
 
+
+
 select.date.plumber <- function(desired.table, date, con) {
   
   daily.data <- DBI::dbGetQuery(con, "SELECT date FROM daily_data")
@@ -20,8 +22,12 @@ select.date.plumber <- function(desired.table, date, con) {
   
   if (date == "latest") {
     most.recent.date <- sort(possible.dates, decreasing = TRUE)[1]
-    return.data <- DBI::dbGetQuery(con,
-      paste0("SELECT * FROM ", desired.table, " WHERE date == '", most.recent.date, "'"))
+    
+    sql.statement <- DBI::dbSendQuery(con,
+      paste0("SELECT * FROM ", desired.table, " WHERE date == :desired_date"))
+    DBI::dbBind(sql.statement, params = list(desired_date = most.recent.date))
+    return.data <- DBI::dbFetch(sql.statement)
+    DBI::dbClearResult(sql.statement)
   }
   
   if (date == "all") {
@@ -30,8 +36,11 @@ select.date.plumber <- function(desired.table, date, con) {
   }
   
   if (date %in% possible.dates) {
-    return.data <- DBI::dbGetQuery(con,
-      paste0("SELECT * FROM ", desired.table, " WHERE date == '", date, "'"))
+    sql.statement <- DBI::dbSendQuery(con,
+      paste0("SELECT * FROM ", desired.table, " WHERE date == :desired_date"))
+    DBI::dbBind(sql.statement, params = list(desired_date = date))
+    return.data <- DBI::dbFetch(sql.statement)
+    DBI::dbClearResult(sql.statement)
   }
   
   return.data
@@ -69,7 +78,7 @@ function(date = "latest"){
   con <- DBI::dbConnect(RSQLite::SQLite(), db.file)
   on.exit(function() { DBI::dbDisconnect(con) })
   
-  individual.node.data <- select.date.plumber(desired.table = "daily_data", date = date, con = con)
+  individual.node.data <- select.date.plumber(desired.table = "individual_node_data", date = date, con = con)
   
   individual.node.data
   
