@@ -41,10 +41,8 @@ select.date.plumber <- function(desired.table, date, con) {
 
 
 
-#* Get daily_data table
-#* @param date If provided, get data for a specific date. Valid values include
-#* "latest" (the default), "all" for all dates, and dates formatted as 
-#* yyyy-mm-dd, e.g. 2025-07-13.
+#* Get daily_data table.
+#* @param date If provided, get data for a specific date. Valid values include "latest" (the default), "all" for all dates, and dates formatted as yyyy-mm-dd, e.g. 2025-07-13.
 #* @get /daily_data
 function(date = "latest"){
 
@@ -60,10 +58,8 @@ function(date = "latest"){
 }
 
 
-#* Get individual_node_data table
-#* @param date If provided, get data for a specific date. Valid values include
-#* "latest" (the default), "all" for all dates, and dates formatted as 
-#* yyyy-mm-dd, e.g. 2025-07-13.
+#* Get individual_node_data table.
+#* @param date If provided, get data for a specific date. Valid values include "latest" (the default), "all" for all dates, and dates formatted as yyyy-mm-dd, e.g. 2025-07-13.
 #* @get /individual_node_data
 function(date = "latest"){
   
@@ -79,8 +75,7 @@ function(date = "latest"){
   
 }
 
-#* Get asn (Autonomous System Number) table. Data was gathered from Team Cymru.
-#* https://www.team-cymru.com/ip-asn-mapping
+#* Get asn (Autonomous System Number) table. Data was gathered from Team Cymru: https://www.team-cymru.com/ip-asn-mapping
 #* @get /asn
 function(){
   
