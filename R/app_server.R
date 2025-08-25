@@ -439,7 +439,7 @@ app_server <- function(input, output, session) {
         extensions = c("Buttons", "ColReorder"),
         escape = FALSE,
         style = "default",
-        options = list(dom = "Blfrtip", buttons = I("colvis"),
+        options = list(dom = "Blfrtip", buttons = I(c("colvis", "copy", "csv", "excel")),
           colReorder = list(realtime = FALSE))
       )
       
