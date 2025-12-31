@@ -122,6 +122,13 @@ async fn main() {
     let mut conn = Connection::open("crawler-netscan.db").await.unwrap();
 
     conn.execute(
+        "PRAGMA busy_timeout=60000",
+        [],
+    )
+    // Set DB write timeout to 60 seconds to prevent "database is locked" errors:
+    // https://github.com/launchbadge/sqlx/issues/451
+
+    conn.execute(
         "CREATE TABLE handshake_attempts (
             connected_node  TEXT
         )",
@@ -156,8 +163,7 @@ async fn main() {
     .unwrap();
 
 
-    // If collecting peer lists, only use one thread so that data is written to
-    // peer_lists.txt seqentially.
+    // If collecting peer lists, use fewer threads because of DB write locks
     let n_semaphore_permits: usize = match Cli::parse().collect_peer_lists {
         true => 10,
         false => 100
