@@ -125,6 +125,8 @@ async fn main() {
         "PRAGMA busy_timeout=60000",
         [],
     )
+    .await
+    .unwrap();
     // Set DB write timeout to 60 seconds to prevent "database is locked" errors:
     // https://github.com/launchbadge/sqlx/issues/451
 
