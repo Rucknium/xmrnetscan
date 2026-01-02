@@ -27,4 +27,5 @@ cuprate-wire = { git = "https://github.com/Cuprate/cuprate.git", branch = "expos
 futures = "0.3.31"
 rand = "0.9.0-beta.1"
 clap = { version = "4.5.40", features = ["derive"] }
-tokio-sqlite = '*'
+
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }

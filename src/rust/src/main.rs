@@ -63,7 +63,12 @@ use cuprate_wire::{
 };
 
 use clap::Parser;
-use tokio_sqlite::Connection;
+// use tokio_sqlite::Connection;
+
+use sqlx::{
+    Connection,
+    SqliteConnection
+};
 
 /// A simple tool to find all the reachable nodes on the Monero P2P network. It works by recursively connecting to
 /// every peer we are told about in a peer list message, starting by connecting to the seed nodes.
@@ -119,27 +124,26 @@ struct Peerlists {
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
 
-    let mut conn = Connection::open("crawler-netscan.db").await.unwrap();
+    let mut conn = SqliteConnection::connect("crawler-netscan.db").await.unwrap();
 
-    conn.execute(
-        "PRAGMA busy_timeout=60000",
-        [],
-    )
-    .await
-    .unwrap();
+    // conn.execute(
+    //     "PRAGMA busy_timeout=60000",
+    //     [],
+    // )
+    // .await
+    // .unwrap();
     // Set DB write timeout to 60 seconds to prevent "database is locked" errors:
     // https://github.com/launchbadge/sqlx/issues/451
 
-    conn.execute(
+    sqlx::query(
         "CREATE TABLE handshake_attempts (
             connected_node  TEXT
-        )",
-        [],
-    )
-    .await
-    .unwrap();
+        )")
+        .execute(&mut conn)
+        .await
+        .unwrap();
 
-    conn.execute(
+    sqlx::query(
         "CREATE TABLE handshake_data (
             connected_node  TEXT,
             rpc_port        INTEGER,
@@ -148,22 +152,19 @@ async fn main() {
             support_flags   TEXT,
             core_sync_data  TEXT,
             my_port         INTEGER
-        )",
-        [],
-    )
-    .await
-    .unwrap();
+        )")
+        .execute(&mut conn)
+        .await
+        .unwrap();
 
-    conn.execute(
+    sqlx::query(
         "CREATE TABLE peerlists (
             connected_node  TEXT,
             peerlist        TEXT
-        )",
-        [],
-    )
-    .await
-    .unwrap();
-
+        )")
+        .execute(&mut conn)
+        .await
+        .unwrap();
 
     // If collecting peer lists, use fewer threads because of DB write locks
     let n_semaphore_permits: usize = match Cli::parse().collect_peer_lists {
@@ -257,12 +258,12 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
             connected_node: addr.to_string()
         };
 
-        let mut conn = Connection::open("crawler-netscan.db").await.unwrap();
+        let mut conn = SqliteConnection::connect("crawler-netscan.db").await.unwrap();
 
-        conn.execute(
-            "INSERT INTO handshake_attempts (connected_node) VALUES ($1)",
-            [handshake_attempt.connected_node.into()],
-        )
+        sqlx::query(
+        "INSERT INTO handshake_attempts (connected_node) VALUES ($1)")
+        .bind(handshake_attempt.connected_node)
+        .execute(&mut conn)
         .await
         .unwrap();
 
@@ -300,22 +301,20 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
             my_port: my_port
         };
 
-        let mut conn = Connection::open("crawler-netscan.db").await.unwrap();
+        let mut conn = SqliteConnection::connect("crawler-netscan.db").await.unwrap();
 
-        conn.execute(
-            "INSERT INTO handshake_data (connected_node, rpc_port, pruning_seed, peer_id, support_flags, core_sync_data, my_port) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            [
-                handshake_data.connected_node.into(),
-                handshake_data.rpc_port.into(),
-                handshake_data.pruning_seed.into(),
-                handshake_data.peer_id.into(),
-                handshake_data.support_flags.into(),
-                handshake_data.core_sync_data.into(),
-                handshake_data.my_port.into()
-            ],
-            )
-            .await
-            .unwrap();
+        sqlx::query(
+        "INSERT INTO handshake_data (connected_node, rpc_port, pruning_seed, peer_id, support_flags, core_sync_data, my_port) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+        .bind(handshake_data.connected_node)
+        .bind(handshake_data.rpc_port)
+        .bind(handshake_data.pruning_seed)
+        .bind(handshake_data.peer_id)
+        .bind(handshake_data.support_flags)
+        .bind(handshake_data.core_sync_data)
+        .bind(handshake_data.my_port)
+        .execute(&mut conn)
+        .await
+        .unwrap();
 
     }
 
@@ -397,15 +396,13 @@ impl Service<AddressBookRequest<ClearNet>> for AddressBookService {
                             peerlist: format_args!("{peer_adr_canon:?}").to_string()
                         };
 
-                        let mut conn = Connection::open("crawler-netscan.db").await.unwrap();
+                        let mut conn = SqliteConnection::connect("crawler-netscan.db").await.unwrap();
 
-                        conn.execute(
-                            "INSERT INTO peerlists (connected_node, peerlist) VALUES ($1, $2)",
-                            [
-                                peerlists.connected_node.into(),
-                                peerlists.peerlist.into()
-                            ],
-                            )
+                        sqlx::query(
+                            "INSERT INTO peerlists (connected_node, peerlist) VALUES ($1, $2)")
+                            .bind(peerlists.connected_node)
+                            .bind(peerlists.peerlist)
+                            .execute(&mut conn)
                             .await
                             .unwrap();
 
