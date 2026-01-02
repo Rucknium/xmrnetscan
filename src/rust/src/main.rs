@@ -268,7 +268,13 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
             connected_node: addr.to_string()
         };
 
-        let mut conn = SqliteConnection::connect("crawler-netscan.db").await.unwrap();
+        let mut conn: SqliteConnection = SqliteConnectOptions::from_str("sqlite://crawler-netscan.db")
+        .unwrap()
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Delete)
+        .pragma("busy_timeout", "60000")
+        .connect()
+        .await
+        .unwrap();
 
         sqlx::query(
         "INSERT INTO handshake_attempts (connected_node) VALUES ($1)")
@@ -311,7 +317,13 @@ async fn check_node(addr: SocketAddr) -> Result<(), tower::BoxError> {
             my_port: my_port
         };
 
-        let mut conn = SqliteConnection::connect("crawler-netscan.db").await.unwrap();
+        let mut conn: SqliteConnection = SqliteConnectOptions::from_str("sqlite://crawler-netscan.db")
+        .unwrap()
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Delete)
+        .pragma("busy_timeout", "60000")
+        .connect()
+        .await
+        .unwrap();
 
         sqlx::query(
         "INSERT INTO handshake_data (connected_node, rpc_port, pruning_seed, peer_id, support_flags, core_sync_data, my_port) VALUES ($1, $2, $3, $4, $5, $6, $7)")
@@ -406,7 +418,13 @@ impl Service<AddressBookRequest<ClearNet>> for AddressBookService {
                             peerlist: format_args!("{peer_adr_canon:?}").to_string()
                         };
 
-                        let mut conn = SqliteConnection::connect("crawler-netscan.db").await.unwrap();
+                         let mut conn: SqliteConnection = SqliteConnectOptions::from_str("sqlite://crawler-netscan.db")
+                         .unwrap()
+                         .journal_mode(sqlx::sqlite::SqliteJournalMode::Delete)
+                         .pragma("busy_timeout", "60000")
+                         .connect()
+                         .await
+                         .unwrap();
 
                         sqlx::query(
                             "INSERT INTO peerlists (connected_node, peerlist) VALUES ($1, $2)")
