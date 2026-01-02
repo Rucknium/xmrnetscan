@@ -127,10 +127,11 @@ struct Peerlists {
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
 
-        let mut conn: SqliteConnection = SqliteConnectOptions::from_str("sqlite://crawler-netscan.db")
+    let mut conn: SqliteConnection = SqliteConnectOptions::from_str("sqlite://crawler-netscan.db")
         .unwrap()
         .create_if_missing(true)
         .journal_mode(sqlx::sqlite::SqliteJournalMode::Delete)
+        .pragma("busy_timeout", "60000")
         .connect()
         .await
         .unwrap();
