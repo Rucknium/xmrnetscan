@@ -67,7 +67,9 @@ use clap::Parser;
 
 use sqlx::{
     Connection,
-    SqliteConnection
+    SqliteConnection,
+    ConnectOptions,
+    sqlite::SqliteConnectOptions
 };
 
 /// A simple tool to find all the reachable nodes on the Monero P2P network. It works by recursively connecting to
@@ -124,7 +126,13 @@ struct Peerlists {
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
 
-    let mut conn = SqliteConnection::connect("crawler-netscan.db").await.unwrap();
+        let mut conn: SqliteConnection = SqliteConnectOptions::from_str("sqlite://crawler-netscan.db")
+        .unwrap()
+        .create_if_missing(true)
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Delete)
+        .connect()
+        .await
+        .unwrap();
 
     // conn.execute(
     //     "PRAGMA busy_timeout=60000",
