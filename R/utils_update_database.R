@@ -180,10 +180,13 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
   
   bad_peers <- stringr::str_extract(bad_peers, "[0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}[:][0-9]{1,5}")
   
-  connections[, is_spy_node := connected_node %in% bad_peers | xmrpeers::in.ip.set(connected_node, ban_list_v2)]
   connections[, has_spy_node_fingerprint := connected_node %in% bad_peers]
-  connections[, is_on_mrl_ban_list_v1 := xmrpeers::in.ip.set(connected_node, ban_list_v1)]
-  connections[, is_on_mrl_ban_list_v2 := xmrpeers::in.ip.set(connected_node, ban_list_v2)]
+  connections[, is_on_mrl_ban_list_v1 :=
+      xmrpeers::in.ip.set(stringr::str_extract(connected_node, "[0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}"), ban_list_v1)]
+  connections[, is_on_mrl_ban_list_v2 :=
+      xmrpeers::in.ip.set(stringr::str_extract(connected_node, "[0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}"), ban_list_v2)]
+  # These still have ports attached. Need to extract just the IP address.
+  connections[, is_spy_node := connected_node %in% bad_peers | is_on_mrl_ban_list_v2]
   connections[, is_hidden_spy_node := is_spy_node & (! has_spy_node_fingerprint)]
   
   
