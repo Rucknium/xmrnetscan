@@ -43,6 +43,7 @@ app_server <- function(input, output, session) {
     list(dtickrange=list("M12", NULL), value="%Y Y")
   )
   
+  
   # shiny::observe({
     
     output$line_chart1 <- plotly::renderPlotly({
@@ -67,7 +68,7 @@ app_server <- function(input, output, session) {
           hovertemplate = "Nodes: %{y} (%{customdata.percent_spy_nodes:.0f}% of total)")
       fig <- fig |>
         plotly::layout(
-          title = list(text = "Estimated number of nodes"),
+          title = list(text = "Estimated number of nodes (Stacked line chart)"),
           margin = list(t = 100, l = 0, r = 0),
           xaxis = list(title = '',
             zerolinecolor = '#ffff',
@@ -78,7 +79,61 @@ app_server <- function(input, output, session) {
             zerolinewidth = 2,
             gridcolor = 'ffff'),
           plot_bgcolor= '#f2f8ee', hovermode = 'x', paper_bgcolor = '#f2f8ee',
-          legend = list(orientation = "h", xanchor = "center", x = 0.5, yanchor = "top", y = 1.1)) |>
+          legend = list(orientation = "h", xanchor = "center", x = 0.5, yanchor = "top", y = 1.1),
+          shapes = list(
+            list(
+              type = "line",
+              y0 = 0,
+              y1 = 1,
+              yref = "paper",
+              x0 = as.Date("2025-10-22"),
+              x1 = as.Date("2025-10-22"),
+              line = list(color = "black", dash="dot")
+            ),
+            list(
+              type = "line",
+              y0 = 0,
+              y1 = 1,
+              yref = "paper",
+              x0 = as.Date("2025-10-27"),
+              x1 = as.Date("2025-10-27"),
+              line = list(color = "black", dash="dot")
+            ),
+            list(
+              type = "line",
+              y0 = 0,
+              y1 = 1,
+              yref = "paper",
+              x0 = as.Date("2025-12-05"),
+              x1 = as.Date("2025-12-05"),
+              line = list(color = "black", dash="dot")
+            ),
+            list(
+              type = "line",
+              y0 = 0,
+              y1 = 1,
+              yref = "paper",
+              x0 = as.Date("2025-12-10"),
+              x1 = as.Date("2025-12-10"),
+              line = list(color = "black", dash="dot")
+            )
+          ) ) |>
+        plotly::add_annotations(showlegend = FALSE, x = "2025-10-22", y = 0,
+          font = list(color = "black"),
+          yref = "paper", xanchor = "right", yanchor = "bottom", showarrow = FALSE,
+          text = c("Digital Ocean spy\nnodes hide their\nspy fingerprint")) |>
+        plotly::add_annotations(showlegend = FALSE, x = "2025-10-27", y = 0,
+          font = list(color = "black"),
+          yref = "paper", xanchor = "left", yanchor = "bottom", showarrow = FALSE,
+          text = c("Hetzner spy\nnodes hide their\nspy fingerprint")) |>
+        plotly::add_annotations(showlegend = FALSE, x = "2025-12-05", y = 0,
+          font = list(color = "black"),
+          yref = "paper", xanchor = "right", yanchor = "bottom", showarrow = FALSE,
+          text = c("LionLink spy\nnodes disappear")) |>
+        plotly::add_annotations(showlegend = FALSE, x = "2025-12-10", y = 0,
+          font = list(color = "black"),
+          yref = "paper", xanchor = "left", yanchor = "bottom", showarrow = FALSE,
+          text = c("Spruce Creek spy\nnodes appear")) |>
         plotly::config(displayModeBar = FALSE) 
       fig
       
@@ -91,6 +146,7 @@ app_server <- function(input, output, session) {
     output$line_chart2 <- plotly::renderPlotly({
       
       data <- daily.data
+      data$n_honest_dns_ban_list_enabled[as.Date(data$date) > as.Date("2025-12-03")] <- NA
       
       data_list <- split(data, seq_len(nrow(data)))
       
@@ -101,9 +157,12 @@ app_server <- function(input, output, session) {
         hovertemplate = "Nodes: %{y} (%{customdata.percent_honest_dns_ban_list_enabled:.0f}% of total)") |>
         plotly::layout(xaxis = list(rangeslider = list(visible = TRUE),
           tickformatstops = tickformatstops.arg)) |>
-        plotly::add_trace(y = ~n_honest_mrl_ban_list_enabled, name = "MRL ban list enabled",
+        plotly::add_trace(y = ~n_honest_mrl_ban_list_v1_enabled, name = "MRL ban list enabled",
+          line = list(color = "black"),
+          hovertemplate = "Nodes: %{y} (%{customdata.percent_honest_mrl_ban_list_v1_enabled:.0f}% of total)")  |>
+        plotly::add_trace(y = ~n_honest_mrl_ban_list_v2_enabled, name = "MRL ban list enabled",
           line = list(color = mrl.blue),
-          hovertemplate = "Nodes: %{y} (%{customdata.percent_honest_mrl_ban_list_enabled:.0f}% of total)")
+          hovertemplate = "Nodes: %{y} (%{customdata.percent_honest_mrl_ban_list_v2_enabled:.0f}% of total)")
       fig <- fig |>
         plotly::layout(
           title = list(text = "Estimated number of honest nodes with ban lists enabled"),
@@ -289,7 +348,7 @@ app_server <- function(input, output, session) {
       
       display.data[, rpc_confirmed := ifelse(rpc_confirmed == 1, "Yes", "No")]
       display.data[, is_pruned := ifelse(is_pruned == 1, "Yes", "No")]
-      display.data[, mrl_ban_list_enabled := ifelse(mrl_ban_list_enabled == 1, "Yes", "No")]
+      display.data[, mrl_ban_list_v2_enabled := ifelse(mrl_ban_list_v2_enabled == 1, "Yes", "No")]
       display.data[, dns_ban_list_enabled := ifelse(dns_ban_list_enabled == 1, "Yes", "No")]
       
       
@@ -302,7 +361,7 @@ app_server <- function(input, output, session) {
         marker = list(colors = colors),
         tiling = list(pad = 0),
         customdata = data_list,
-        texttemplate = "IP: %{customdata.connected_node_ip}<br>AS: %{customdata.as_name} (%{customdata.asn})<br>Domain: %{customdata.rpc_domain}<br>Port(s): %{customdata.ports}<br>RPC enabled: %{customdata.rpc_confirmed}<br>Pruned: %{customdata.is_pruned}<br>MRL ban list: %{customdata.mrl_ban_list_enabled}<br>DNS ban list: %{customdata.dns_ban_list_enabled}")
+        texttemplate = "IP: %{customdata.connected_node_ip}<br>AS: %{customdata.as_name} (%{customdata.asn})<br>Domain: %{customdata.rpc_domain}<br>Port(s): %{customdata.ports}<br>RPC enabled: %{customdata.rpc_confirmed}<br>Pruned: %{customdata.is_pruned}<br>MRL ban list: %{customdata.mrl_ban_list_v2_enabled}<br>DNS ban list: %{customdata.dns_ban_list_enabled}")
       
       shapes = list(
         list(x0 = 0, y0 = 1, x1 = 0.01, y1 = 0.99, fillcolor = "red", line = list(width = 1)),
@@ -367,7 +426,7 @@ app_server <- function(input, output, session) {
       
       display.data[, rpc_confirmed := ifelse(rpc_confirmed == 1, "Yes", "No")]
       display.data[, is_pruned := ifelse(is_pruned == 1, "Yes", "No")]
-      display.data[, mrl_ban_list_enabled := ifelse(mrl_ban_list_enabled == 1, "Yes", "No")]
+      display.data[, mrl_ban_list_v2_enabled := ifelse(mrl_ban_list_v2_enabled == 1, "Yes", "No")]
       display.data[, dns_ban_list_enabled := ifelse(dns_ban_list_enabled == 1, "Yes", "No")]
       
       
@@ -380,7 +439,7 @@ app_server <- function(input, output, session) {
         marker = list(colors = colors),
         tiling = list(pad = 0),
         customdata = data_list,
-        texttemplate = "IP: %{customdata.connected_node_ip}<br>AS: %{customdata.as_name} (%{customdata.asn})<br>Domain: %{customdata.rpc_domain}<br>Port(s): %{customdata.ports}<br>RPC enabled: %{customdata.rpc_confirmed}<br>Pruned: %{customdata.is_pruned}<br>MRL ban list: %{customdata.mrl_ban_list_enabled}<br>DNS ban list: %{customdata.dns_ban_list_enabled}")
+        texttemplate = "IP: %{customdata.connected_node_ip}<br>AS: %{customdata.as_name} (%{customdata.asn})<br>Domain: %{customdata.rpc_domain}<br>Port(s): %{customdata.ports}<br>RPC enabled: %{customdata.rpc_confirmed}<br>Pruned: %{customdata.is_pruned}<br>MRL ban list: %{customdata.mrl_ban_list_v2_enabled}<br>DNS ban list: %{customdata.dns_ban_list_enabled}")
       
       shapes = list(
         list(x0 = 0, y0 = 1, x1 = 0.01, y1 = 0.99, fillcolor = "red", line = list(width = 1)),
@@ -426,7 +485,7 @@ app_server <- function(input, output, session) {
       display.data[, RPC_domain := factor(rpc_domain)]
       display.data[, RPC := factor(ifelse(rpc_confirmed == 1, "Yes", "No"))]
       display.data[, Pruned := factor(ifelse(is_pruned == 1, "Yes", "No"))]
-      display.data[, MRL_banlist := factor(ifelse(mrl_ban_list_enabled == 1, "Yes", "No"))]
+      display.data[, MRL_banlist := factor(ifelse(mrl_ban_list_v2_enabled == 1, "Yes", "No"))]
       display.data[, DNS_banlist := factor(ifelse(dns_ban_list_enabled == 1, "Yes", "No"))]
       display.data[, Autonomous_System := factor(as_name)]
       

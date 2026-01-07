@@ -80,6 +80,8 @@ function(date = "latest"){
   
   individual.node.data <- select.date.plumber(desired.table = "individual_node_data", date = date, con = con)
   
+  individual.node.data$mrl_ban_list_enabled <- individual.node.data$mrl_ban_list_v1_enabled
+  
   individual.node.data
   
 }

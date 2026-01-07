@@ -106,7 +106,8 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
   
   dns.blocklist <- unlist(strsplit(dns.blocklist, ";"))
   
-  data(ban_list, package = "xmrpeers")
+  data(ban_list_v1, package = "xmrpeers")
+  data(ban_list_v2, package = "xmrpeers")
   
   bad_peers <- readLines(paste0(scan.dir, "/bad_peers.txt"))
   
@@ -137,23 +138,28 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
   disseminated.peerlists <- disseminated.peerlists[ !is.na(IP::ipv4(disseminated.peerlists))]
   # Keep only IPv4 addresses
   
-  mrl.ban.list.peers <- disseminated.peerlists[xmrpeers::in.ip.set(disseminated.peerlists, ban_list)]
+  mrl.ban.list.v1.peers <- disseminated.peerlists[xmrpeers::in.ip.set(disseminated.peerlists, ban_list_v1)]
+  mrl.ban.list.v2.peers <- disseminated.peerlists[xmrpeers::in.ip.set(disseminated.peerlists, ban_list_v2)]
   dns.ban.list.peers <- disseminated.peerlists[xmrpeers::in.ip.set(disseminated.peerlists, dns.blocklist)]
   
   banlist.status <- lapply(split.peerlists, function(x) {
     
-    n_disseminated_peers_on_mrl_ban_list <- sum(x %in% mrl.ban.list.peers)
+    n_disseminated_peers_on_mrl_ban_list_v1 <- sum(x %in% mrl.ban.list.v1.peers)
+    n_disseminated_peers_on_mrl_ban_list_v2 <- sum(x %in% mrl.ban.list.v2.peers)
     n_disseminated_peers_on_dns_ban_list <- sum(x %in% dns.ban.list.peers)
     
-    mrl_ban_list_enabled <- length(x) >= 200 & n_disseminated_peers_on_mrl_ban_list == 0
+    mrl_ban_list_v1_enabled <- length(x) >= 200 & n_disseminated_peers_on_mrl_ban_list_v1 == 0
+    mrl_ban_list_v2_enabled <- length(x) >= 200 & n_disseminated_peers_on_mrl_ban_list_v2 == 0
     dns_ban_list_enabled <- length(x) >= 200 & n_disseminated_peers_on_dns_ban_list == 0
     # Must have disseminated a peer list with 200 or more peers (there are 
     # 250 usually) or else there is greater risk of false positive
     
     data.table(
-      n_disseminated_peers_on_mrl_ban_list,
+      n_disseminated_peers_on_mrl_ban_list_v1,
+      n_disseminated_peers_on_mrl_ban_list_v2,
       n_disseminated_peers_on_dns_ban_list,
-      mrl_ban_list_enabled,
+      mrl_ban_list_v1_enabled,
+      mrl_ban_list_v2_enabled,
       dns_ban_list_enabled
     )
   })
@@ -174,7 +180,12 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
   
   bad_peers <- stringr::str_extract(bad_peers, "[0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}[:][0-9]{1,5}")
   
-  connections[, is_spy_node := connected_node %in% bad_peers]
+  connections[, is_spy_node := connected_node %in% bad_peers | xmrpeers::in.ip.set(connected_node, ban_list_v2)]
+  connections[, has_spy_node_fingerprint := connected_node %in% bad_peers]
+  connections[, is_on_mrl_ban_list_v1 := xmrpeers::in.ip.set(connected_node, ban_list_v1)]
+  connections[, is_on_mrl_ban_list_v2 := xmrpeers::in.ip.set(connected_node, ban_list_v2)]
+  connections[, is_hidden_spy_node := is_spy_node & (! has_spy_node_fingerprint)]
+  
   
   connections[, connected_node_ip := stringr::str_extract(connected_node, "[0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}")]
   
@@ -209,13 +220,19 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
   connections.by.ip <- connections[, .(
     ports = paste(connected_node_port, collapse = ";"),
     is_spy_node = any(is_spy_node),
+    has_spy_node_fingerprint = any(has_spy_node_fingerprint),
+    is_on_mrl_ban_list_v1 = any(is_on_mrl_ban_list_v1),
+    is_on_mrl_ban_list_v2 = any(is_on_mrl_ban_list_v2),
+    is_hidden_spy_node = any(is_hidden_spy_node),
     rpc_available = any(rpc_available),
     rpc_confirmed = any(rpc_confirmed),
     rpc_domain = unique(rpc_domain),
     is_pruned = any(is_pruned),
-    n_disseminated_peers_on_mrl_ban_list = median(as.numeric(n_disseminated_peers_on_mrl_ban_list)),
+    n_disseminated_peers_on_mrl_ban_list_v1 = median(as.numeric(n_disseminated_peers_on_mrl_ban_list_v1)),
+    n_disseminated_peers_on_mrl_ban_list_v2 = median(as.numeric(n_disseminated_peers_on_mrl_ban_list_v2)),
     n_disseminated_peers_on_dns_ban_list = median(as.numeric(n_disseminated_peers_on_dns_ban_list)),
-    mrl_ban_list_enabled = all(mrl_ban_list_enabled),
+    mrl_ban_list_v1_enabled = all(mrl_ban_list_v1_enabled),
+    mrl_ban_list_v2_enabled = all(mrl_ban_list_v2_enabled),
     dns_ban_list_enabled = all(dns_ban_list_enabled)
   ), by = "connected_node_ip"]
   
@@ -229,10 +246,12 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
   connections.by.ip <- merge(connections.by.ip, spy.share.subnet, by = "connected_node_ip_subnet_16")
   
   data.table::setcolorder(connections.by.ip, c("connected_node_ip",
-    "connected_node_ip_subnet_16", "ports", "is_spy_node", "rpc_available",
-    "rpc_confirmed", "rpc_domain", "is_pruned", "n_disseminated_peers_on_mrl_ban_list",
-    "n_disseminated_peers_on_dns_ban_list", "mrl_ban_list_enabled", "dns_ban_list_enabled",
-    "spy_share_subnet_16", "spy_color_subnet_16"))
+    "connected_node_ip_subnet_16", "ports", "is_spy_node", "has_spy_node_fingerprint",
+    "is_on_mrl_ban_list_v1", "is_on_mrl_ban_list_v2", "is_hidden_spy_node", "rpc_available",
+    "rpc_confirmed", "rpc_domain", "is_pruned", "n_disseminated_peers_on_mrl_ban_list_v1",
+    "n_disseminated_peers_on_mrl_ban_list_v2",
+    "n_disseminated_peers_on_dns_ban_list", "mrl_ban_list_v1_enabled", "mrl_ban_list_v2_enabled",
+    "dns_ban_list_enabled", "spy_share_subnet_16", "spy_color_subnet_16"))
   
   connections.by.ip <- cbind(date = data.date, connections.by.ip)
   
@@ -243,7 +262,8 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
     n_spy_nodes = sum(is_spy_node, na.rm = TRUE),
     n_honest_nodes = sum(!is_spy_node, na.rm = TRUE),
     n_unreachable_nodes = n_unreachable_nodes,
-    n_honest_mrl_ban_list_enabled = sum(mrl_ban_list_enabled & !is_spy_node, na.rm = TRUE),
+    n_honest_mrl_ban_list_v1_enabled = sum(mrl_ban_list_v1_enabled & !is_spy_node, na.rm = TRUE),
+    n_honest_mrl_ban_list_v2_enabled = sum(mrl_ban_list_v2_enabled & !is_spy_node, na.rm = TRUE),
     n_honest_dns_ban_list_enabled = sum(dns_ban_list_enabled & !is_spy_node, na.rm = TRUE),
     n_honest_is_pruned = sum(is_pruned & !is_spy_node, na.rm = TRUE),
     n_honest_rpc_available = sum(rpc_available & !is_spy_node, na.rm = TRUE),
@@ -257,7 +277,8 @@ process.raw.data <- function(scan.dir, data.date, confirm.rpc = TRUE, get.domain
   daily.data[, percent_honest_is_pruned := 100 * n_honest_is_pruned / n_honest_nodes]
   daily.data[, percent_honest_rpc_available := 100 * n_honest_rpc_available / n_honest_nodes]
   daily.data[, percent_honest_rpc_confirmed := 100 * n_honest_rpc_confirmed / n_honest_nodes]
-  daily.data[, percent_honest_mrl_ban_list_enabled := 100 * n_honest_mrl_ban_list_enabled / n_honest_nodes]
+  daily.data[, percent_honest_mrl_ban_list_v1_enabled := 100 * n_honest_mrl_ban_list_v1_enabled / n_honest_nodes]
+  daily.data[, percent_honest_mrl_ban_list_v2_enabled := 100 * n_honest_mrl_ban_list_v2_enabled / n_honest_nodes]
   daily.data[, percent_honest_dns_ban_list_enabled := 100 * n_honest_dns_ban_list_enabled / n_honest_nodes]
   
   
@@ -345,7 +366,8 @@ n_nodes INTEGER,
 n_spy_nodes INTEGER,
 n_honest_nodes INTEGER,
 n_unreachable_nodes INTEGER,
-n_honest_mrl_ban_list_enabled INTEGER,
+n_honest_mrl_ban_list_v1_enabled INTEGER,
+n_honest_mrl_ban_list_v2_enabled INTEGER,
 n_honest_dns_ban_list_enabled INTEGER,
 n_honest_is_pruned INTEGER,
 n_honest_rpc_available INTEGER,
@@ -356,7 +378,8 @@ percent_unreachable_nodes REAL,
 percent_honest_is_pruned REAL,
 percent_honest_rpc_available REAL,
 percent_honest_rpc_confirmed REAL,
-percent_honest_mrl_ban_list_enabled REAL,
+percent_honest_mrl_ban_list_v1_enabled REAL,
+percent_honest_mrl_ban_list_v2_enabled REAL,
 percent_honest_dns_ban_list_enabled REAL,
 herfindahl_hirschman_asn REAL,
 unique(date)
@@ -370,13 +393,19 @@ connected_node_ip TEXT,
 connected_node_ip_subnet_16 TEXT,
 ports TEXT,
 is_spy_node INTEGER,
+has_spy_node_fingerprint INTEGER,
+is_on_mrl_ban_list_v1 INTEGER,
+is_on_mrl_ban_list_v2 INTEGER,
+is_hidden_spy_node INTEGER,
 rpc_available INTEGER,
 rpc_confirmed INTEGER,
 rpc_domain TEXT,
 is_pruned INTEGER,
-n_disseminated_peers_on_mrl_ban_list REAL,
+n_disseminated_peers_on_mrl_ban_list_v1 REAL,
+n_disseminated_peers_on_mrl_ban_list_v2 REAL,
 n_disseminated_peers_on_dns_ban_list REAL,
-mrl_ban_list_enabled INTEGER,
+mrl_ban_list_v1_enabled INTEGER,
+mrl_ban_list_v2_enabled INTEGER,
 dns_ban_list_enabled INTEGER,
 spy_share_subnet_16 REAL,
 spy_color_subnet_16 TEXT,
@@ -384,6 +413,7 @@ asn INTEGER,
 as_name TEXT,
 unique(date, connected_node_ip)
 )")
+    
     # NOTE: unique(date, connected_node_ip) prevents the same
     # date/IP combination being inserted more than once
     
@@ -463,7 +493,7 @@ unique(connected_node_ip)
   print(str(processed.data[["daily.data"]]))
   
   daily_data.statement <- DBI::dbSendQuery(con,
-    "INSERT OR IGNORE INTO daily_data VALUES (:date,:n_nodes,:n_spy_nodes,:n_honest_nodes,:n_unreachable_nodes,:n_honest_mrl_ban_list_enabled,:n_honest_dns_ban_list_enabled,:n_honest_is_pruned,:n_honest_rpc_available,:n_honest_rpc_confirmed,:percent_spy_nodes,:percent_honest_nodes,:percent_unreachable_nodes,:percent_honest_is_pruned,:percent_honest_rpc_available,:percent_honest_rpc_confirmed,:percent_honest_mrl_ban_list_enabled,:percent_honest_dns_ban_list_enabled,:herfindahl_hirschman_asn)")
+    "INSERT OR IGNORE INTO daily_data VALUES (:date,:n_nodes,:n_spy_nodes,:n_honest_nodes,:n_unreachable_nodes,:n_honest_mrl_ban_list_v1_enabled,:n_honest_mrl_ban_list_v2_enabled,:n_honest_dns_ban_list_enabled,:n_honest_is_pruned,:n_honest_rpc_available,:n_honest_rpc_confirmed,:percent_spy_nodes,:percent_honest_nodes,:percent_unreachable_nodes,:percent_honest_is_pruned,:percent_honest_rpc_available,:percent_honest_rpc_confirmed,:percent_honest_mrl_ban_list_v1_enabled,:percent_honest_mrl_ban_list_v2_enabled,:percent_honest_dns_ban_list_enabled,:herfindahl_hirschman_asn)")
   # "IGNORE" prevents the same data from being inserted more than once
   DBI::dbBind(daily_data.statement, params = processed.data[["daily.data"]])
   DBI::dbClearResult(daily_data.statement)
@@ -471,7 +501,7 @@ unique(connected_node_ip)
   print(str(processed.data[["connections.by.ip"]]))
   
   individual_node_data.statement <- DBI::dbSendQuery(con,
-    "INSERT OR IGNORE INTO individual_node_data VALUES (:date,:connected_node_ip,:connected_node_ip_subnet_16,:ports,:is_spy_node,:rpc_available,:rpc_confirmed,:rpc_domain,:is_pruned,:n_disseminated_peers_on_mrl_ban_list, :n_disseminated_peers_on_dns_ban_list,:mrl_ban_list_enabled,:dns_ban_list_enabled,:spy_share_subnet_16,:spy_color_subnet_16,:asn,:as_name)")
+    "INSERT OR IGNORE INTO individual_node_data VALUES (:date,:connected_node_ip,:connected_node_ip_subnet_16,:ports,:is_spy_node,:has_spy_node_fingerprint,:is_on_mrl_ban_list_v1,:is_on_mrl_ban_list_v2, :is_hidden_spy_node,:rpc_available,:rpc_confirmed,:rpc_domain,:is_pruned,:n_disseminated_peers_on_mrl_ban_list_v1,:n_disseminated_peers_on_mrl_ban_list_v2, :n_disseminated_peers_on_dns_ban_list,:mrl_ban_list_v1_enabled,:mrl_ban_list_v2_enabled,:dns_ban_list_enabled,:spy_share_subnet_16,:spy_color_subnet_16,:asn,:as_name)")
   # "IGNORE" prevents the same data from being inserted more than once
   DBI::dbBind(individual_node_data.statement, params = processed.data[["connections.by.ip"]])
   DBI::dbClearResult(individual_node_data.statement)
@@ -516,7 +546,11 @@ create.plot.images <- function(db.file  = "netscan-test.db",
   data.table::setDT(display.data)
   
   display.data[, y := 1]
-  display.data[, type := ifelse(is_spy_node == 1, "spy", "honest")]
+  display.data[, type := ifelse(has_spy_node_fingerprint == 1, "Has spy fingerprint behavior", "honest")]
+  display.data[type == "honest", type := ifelse(is_hidden_spy_node == 1, "On ban list, but now hiding spy fingerprint", "Honest")]
+  display.data[, type := factor(type,
+    levels = c("Honest", "Has spy fingerprint behavior", "On ban list, but now hiding spy fingerprint"))]
+  # Keep legend in order
   
   display.data[, subnet.16 := gsub("[.][0-9]{1,3}[.][0-9]{1,3}$", "", connected_node_ip)]
   display.data[, subnet.24 := gsub("[.][0-9]{1,3}$", "", connected_node_ip)]
@@ -537,7 +571,7 @@ create.plot.images <- function(db.file  = "netscan-test.db",
       treemapify::geom_treemap_subgroup2_border(colour = "yellow", size = 1.5) +
       treemapify::geom_treemap_subgroup_border(color = "black", size = 2) +
       ggplot2::scale_fill_manual(name = "Node type:",
-        values = c(scales::muted("blue", l = 40), scales::muted("red", l = 60))) +
+        values = c(scales::muted("blue", l = 40), scales::muted("red", l = 60), scales::muted("yellow", l = 60))) +
       treemapify::geom_treemap_subgroup_text(colour = "white", place = "centre", grow = TRUE, min.size = 8) +
       ggplot2::theme(plot.title = ggplot2::element_text(size = 25),
         plot.subtitle = ggplot2::element_text(size = 18),
@@ -551,12 +585,6 @@ create.plot.images <- function(db.file  = "netscan-test.db",
     
   }
   
-  
-  data.table::setDT(display.data)
-  
-  display.data[, y := 1]
-  
-  display.data[, type := ifelse(is_spy_node == 1, "spy", "honest")]
   
   treemap.asn.filepath <- paste0("images/treemap-asn/", most.recent.date, ".png")
   
@@ -572,7 +600,7 @@ create.plot.images <- function(db.file  = "netscan-test.db",
       treemapify::geom_treemap() +
       treemapify::geom_treemap_subgroup_border(color = "yellow", size = 2) +
       ggplot2::scale_fill_manual(name = "Node type:",
-        values = c(scales::muted("blue", l = 40), scales::muted("red", l = 60))) +
+        values = c(scales::muted("blue", l = 40), scales::muted("red", l = 60), scales::muted("yellow", l = 60))) +
       treemapify::geom_treemap_subgroup_text(colour = "white", place = "centre", grow = TRUE, min.size = 8) +
       ggplot2::theme(plot.title = ggplot2::element_text(size = 25),
         plot.subtitle = ggplot2::element_text(size = 18),
