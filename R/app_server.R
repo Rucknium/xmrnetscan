@@ -157,10 +157,10 @@ app_server <- function(input, output, session) {
         hovertemplate = "Nodes: %{y} (%{customdata.percent_honest_dns_ban_list_enabled:.0f}% of total)") |>
         plotly::layout(xaxis = list(rangeslider = list(visible = TRUE),
           tickformatstops = tickformatstops.arg)) |>
-        plotly::add_trace(y = ~n_honest_mrl_ban_list_v1_enabled, name = "MRL ban list enabled",
+        plotly::add_trace(y = ~n_honest_mrl_ban_list_v1_enabled, name = "MRL ban list version 1 enabled",
           line = list(color = "black"),
           hovertemplate = "Nodes: %{y} (%{customdata.percent_honest_mrl_ban_list_v1_enabled:.0f}% of total)")  |>
-        plotly::add_trace(y = ~n_honest_mrl_ban_list_v2_enabled, name = "MRL ban list enabled",
+        plotly::add_trace(y = ~n_honest_mrl_ban_list_v2_enabled, name = "MRL ban list version 2 enabled",
           line = list(color = mrl.blue),
           hovertemplate = "Nodes: %{y} (%{customdata.percent_honest_mrl_ban_list_v2_enabled:.0f}% of total)")
       fig <- fig |>
